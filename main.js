@@ -1,51 +1,6 @@
 (() => {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* ---------------- Brand ---------------- */
-  const params = new URLSearchParams(location.search);
-  const brands = window.BRANDS || {};
-  let brandKey = (params.get("brand") || "").toLowerCase();
-  if (!brands[brandKey]) brandKey = window.ACTIVE_BRAND in brands ? window.ACTIVE_BRAND : Object.keys(brands)[0];
-
-  function applyBrand(key) {
-    const b = brands[key];
-    if (!b) return;
-    document.querySelectorAll("[data-brand]").forEach((el) => {
-      const v = b[el.dataset.brand];
-      if (v) el.textContent = v;
-    });
-    document.querySelectorAll("[data-brand-mark]").forEach((el) => (el.innerHTML = b.mark));
-    document.querySelectorAll("[data-brand-email]").forEach((el) => {
-      el.textContent = b.email;
-      el.href = `mailto:${b.email}`;
-    });
-    document.title = `${b.name} | Meta Ads, Creative & Landing Pages`;
-    const fav = document.querySelector('link[rel="icon"]');
-    if (fav) fav.href = "data:image/svg+xml," + encodeURIComponent(b.mark.trim().replace("<svg ", '<svg xmlns="http://www.w3.org/2000/svg" ')) ;
-    document.querySelectorAll(".brand-options button").forEach((btn) => btn.classList.toggle("active", btn.dataset.key === key));
-  }
-
-  const switcher = document.querySelector(".brand-switcher");
-  if (switcher && window.SHOW_BRAND_SWITCHER) {
-    const opts = switcher.querySelector(".brand-options");
-    Object.entries(brands).forEach(([key, b]) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.key = key;
-      btn.textContent = b.name;
-      btn.addEventListener("click", () => {
-        brandKey = key;
-        applyBrand(key);
-        const url = new URL(location.href);
-        url.searchParams.set("brand", key);
-        history.replaceState(null, "", url);
-      });
-      opts.appendChild(btn);
-    });
-    switcher.hidden = false;
-  }
-  applyBrand(brandKey);
-
   document.querySelectorAll("[data-year]").forEach((el) => (el.textContent = new Date().getFullYear()));
 
   /* ---------------- Nav ---------------- */
