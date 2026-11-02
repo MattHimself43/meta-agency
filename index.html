@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scalora — Meta Ads, Creative & Landing Pages</title>
+  <meta name="description" content="Performance Meta ads, scroll-stopping ad creative and video, and landing pages engineered to convert." />
+  <meta name="theme-color" content="#050914" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="brands.js"></script>
+</head>
+<body>
+
+  <!-- Ambient background -->
+  <div class="bg" aria-hidden="true">
+    <div class="bg-grid"></div>
+    <div class="bg-orb orb-1" data-parallax="0.25"></div>
+    <div class="bg-orb orb-2" data-parallax="-0.15"></div>
+    <div class="bg-orb orb-3" data-parallax="0.1"></div>
+    <div class="bg-noise"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="nav" id="nav">
+    <div class="container nav-inner">
+      <a href="#top" class="logo" aria-label="Home">
+        <span class="logo-mark" data-brand-mark></span>
+        <span class="logo-word" data-brand="name">Scalora</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#services">Services</a>
+        <a href="#process">Process</a>
+        <a href="#work">Work</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a href="#contact" class="btn btn-primary btn-sm nav-cta">Book a call</a>
+      <button class="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    </div>
+    <div class="mobile-menu">
+      <a href="#services">Services</a>
+      <a href="#process">Process</a>
+      <a href="#work">Work</a>
+      <a href="#faq">FAQ</a>
+      <a href="#contact" class="btn btn-primary">Book a strategy call</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow reveal"><span class="pulse"></span> Meta Ads · Creative · Conversion</div>
+          <h1 class="hero-title">
+            <span class="line reveal" data-brand="heroLine1">Ads that scale.</span>
+            <span class="line reveal gradient-text" data-brand="heroLine2">Pages that convert.</span>
+          </h1>
+          <p class="hero-sub reveal">
+            <span data-brand="name">Scalora</span> is a performance studio for ambitious brands. We plan and run your Meta campaigns,
+            shoot the creative that stops the scroll, and build the landing pages that turn clicks into customers.
+          </p>
+          <div class="hero-ctas reveal">
+            <a href="#contact" class="btn btn-primary">Book a free strategy call <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10m0 0L9 4m4 4l-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+            <a href="#work" class="btn btn-ghost">See our work</a>
+          </div>
+          <ul class="hero-points reveal">
+            <li><svg viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Full-funnel Meta strategy</li>
+            <li><svg viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>In-house video production</li>
+            <li><svg viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>CRO-led landing pages</li>
+          </ul>
+        </div>
+
+        <!-- Hero visual: dashboard + phone -->
+        <div class="hero-visual reveal" data-tilt>
+          <div class="dash glass">
+            <div class="dash-head">
+              <div class="dots"><i></i><i></i><i></i></div>
+              <span class="dash-title">Campaign overview</span>
+              <span class="chip chip-live"><span class="pulse"></span>Live</span>
+            </div>
+            <div class="dash-kpis">
+              <div class="kpi"><span class="kpi-label">ROAS</span><span class="kpi-val"><span data-count="4.8" data-decimals="1">0</span>x</span><span class="kpi-delta up">▲ 62%</span></div>
+              <div class="kpi"><span class="kpi-label">CPA</span><span class="kpi-val">£<span data-count="18.40" data-decimals="2">0</span></span><span class="kpi-delta up">▼ 38%</span></div>
+              <div class="kpi"><span class="kpi-label">CVR</span><span class="kpi-val"><span data-count="6.2" data-decimals="1">0</span>%</span><span class="kpi-delta up">▲ 2.1pt</span></div>
+            </div>
+            <svg class="dash-chart" viewBox="0 0 400 140" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B82FF" stop-opacity=".45"/><stop offset="1" stop-color="#3B82FF" stop-opacity="0"/></linearGradient>
+                <linearGradient id="chartLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2E6BFF"/><stop offset="1" stop-color="#5FE3FF"/></linearGradient>
+              </defs>
+              <g class="chart-grid"><line x1="0" y1="35" x2="400" y2="35"/><line x1="0" y1="70" x2="400" y2="70"/><line x1="0" y1="105" x2="400" y2="105"/></g>
+              <path class="chart-area" d="M0 120 C40 115 60 112 90 104 S150 98 180 84 S240 76 270 58 S340 40 400 18 L400 140 L0 140Z" fill="url(#chartFill)"/>
+              <path class="chart-line" d="M0 120 C40 115 60 112 90 104 S150 98 180 84 S240 76 270 58 S340 40 400 18" fill="none" stroke="url(#chartLine)" stroke-width="3" stroke-linecap="round"/>
+              <circle class="chart-dot" cx="400" cy="18" r="5"/>
+            </svg>
+            <div class="dash-foot">
+              <span>Prospecting</span><span>Retargeting</span><span>Advantage+</span>
+            </div>
+          </div>
+
+          <div class="phone float">
+            <div class="phone-screen">
+              <div class="ad-video v1"><span class="play"></span></div>
+              <div class="ad-meta">
+                <div class="ad-brand"><span class="ad-avatar"></span><b>Your Brand</b><small>Sponsored</small></div>
+                <p>The hook that made 40% of people stop scrolling.</p>
+                <span class="ad-cta">Shop now</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="float-chip glass float-slow c1"><span class="ic">⚡</span><div><b>Hook rate</b><small>41.7% · top creative</small></div></div>
+          <div class="float-chip glass float c2"><span class="ic">↗</span><div><b>+212 leads</b><small>this week</small></div></div>
+        </div>
+      </div>
+
+      <div class="scroll-cue" aria-hidden="true"><span></span></div>
+    </section>
+
+    <!-- MARQUEE -->
+    <section class="marquee" aria-label="What we do">
+      <div class="marquee-track">
+        <span>Meta Ads</span><i>✦</i><span>UGC Creative</span><i>✦</i><span>Video Production</span><i>✦</i><span>Landing Pages</span><i>✦</i><span>Conversion Rate Optimisation</span><i>✦</i><span>Creative Testing</span><i>✦</i><span>Pixel &amp; CAPI Setup</span><i>✦</i><span>Retargeting</span><i>✦</i>
+        <span>Meta Ads</span><i>✦</i><span>UGC Creative</span><i>✦</i><span>Video Production</span><i>✦</i><span>Landing Pages</span><i>✦</i><span>Conversion Rate Optimisation</span><i>✦</i><span>Creative Testing</span><i>✦</i><span>Pixel &amp; CAPI Setup</span><i>✦</i><span>Retargeting</span><i>✦</i>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section class="section" id="services">
+      <div class="container">
+        <div class="section-head">
+          <span class="kicker reveal">Services</span>
+          <h2 class="reveal">One team for the <span class="gradient-text">whole funnel.</span></h2>
+          <p class="reveal">Most brands juggle a media buyer, a video crew and a web developer. We bring all three together, so your ads, creative and landing page work as one system.</p>
+        </div>
+
+        <div class="services">
+          <article class="service glass reveal" data-glow>
+            <div class="service-icon">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M3 17l5-5 4 4 8-8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 8h5v5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <span class="service-num">01</span>
+            <h3>Meta Ads Management</h3>
+            <p>Full-funnel campaigns across Facebook and Instagram. We handle strategy, audiences, budgets and daily optimisation, and tie it all to revenue rather than vanity metrics.</p>
+            <ul>
+              <li>Account audit &amp; restructure</li>
+              <li>Pixel, CAPI &amp; tracking setup</li>
+              <li>Advantage+ &amp; scaling frameworks</li>
+              <li>Weekly reporting you can read</li>
+            </ul>
+          </article>
+
+          <article class="service glass reveal featured" data-glow>
+            <div class="service-icon">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="13" height="12" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M16 10.5l5-3v9l-5-3" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+            </div>
+            <span class="service-num">02</span>
+            <h3>Ad Creative &amp; Videography</h3>
+            <p>Ads that look native to the feed and work in the first second. We script, shoot and edit in-house, from UGC-style hooks to polished brand films.</p>
+            <ul>
+              <li>Hook-first scripting</li>
+              <li>On-location &amp; studio shoots</li>
+              <li>UGC, founder-led &amp; product demos</li>
+              <li>Iterative creative testing</li>
+            </ul>
+          </article>
+
+          <article class="service glass reveal" data-glow>
+            <div class="service-icon">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="2"/><path d="M3 9h18M8 14h4M8 17h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="service-num">03</span>
+            <h3>Converting Landing Pages</h3>
+            <p>Fast, mobile-first pages that pick up where the ad left off. Every section has a job, and every job is measured.</p>
+            <ul>
+              <li>Offer &amp; messaging strategy</li>
+              <li>Design &amp; development</li>
+              <li>Sub-2s load times</li>
+              <li>A/B testing &amp; heatmaps</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROCESS (scroll-driven) -->
+    <section class="section process" id="process">
+      <div class="container process-inner">
+        <div class="process-sticky">
+          <span class="kicker reveal">Process</span>
+          <h2 class="reveal">From first call to <span class="gradient-text">compounding growth.</span></h2>
+          <p class="reveal">A clear five-step system. You always know what we are doing and why.</p>
+          <div class="process-meter reveal"><span class="process-meter-fill"></span><b class="process-meter-label">01 / 05</b></div>
+        </div>
+        <ol class="steps">
+          <span class="steps-line" aria-hidden="true"><span></span></span>
+          <li class="step" data-step="1">
+            <span class="step-dot"></span>
+            <span class="step-num">01</span>
+            <h3>Audit &amp; discovery</h3>
+            <p>We go through your ad account, analytics, offer and competitors to find the gaps before spending anything.</p>
+          </li>
+          <li class="step" data-step="2">
+            <span class="step-dot"></span>
+            <span class="step-num">02</span>
+            <h3>Strategy</h3>
+            <p>A clear plan covering audiences, angles, budget split and funnel structure, plus the creative brief and the KPIs we will be measured on.</p>
+          </li>
+          <li class="step" data-step="3">
+            <span class="step-dot"></span>
+            <span class="step-num">03</span>
+            <h3>Create</h3>
+            <p>We script and shoot your ad creative, and design and build the landing page it points to, so both tell one consistent story.</p>
+          </li>
+          <li class="step" data-step="4">
+            <span class="step-dot"></span>
+            <span class="step-num">04</span>
+            <h3>Launch</h3>
+            <p>Tracking checked, campaigns live and structured tests running from day one, with every variable labelled.</p>
+          </li>
+          <li class="step" data-step="5">
+            <span class="step-dot"></span>
+            <span class="step-num">05</span>
+            <h3>Scale</h3>
+            <p>We cut what doesn't work and push budget into what does. Fresh creative goes out every cycle so performance keeps improving.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- WORK (pinned horizontal scroll) -->
+    <section class="work" id="work">
+      <div class="work-sticky">
+        <div class="container work-head">
+          <div>
+            <span class="kicker">Creative</span>
+            <h2>Made for the feed. <span class="gradient-text">Built to perform.</span></h2>
+          </div>
+          <p>A look at the creative formats we produce. Each one is built around a single job: stop the scroll, earn trust or drive the click.</p>
+        </div>
+        <div class="work-track">
+          <article class="reel">
+            <div class="reel-phone"><div class="ad-video v1"><span class="play"></span><span class="reel-tag">9:16 · UGC</span></div></div>
+            <h3>UGC hook ads</h3><p>Authentic, creator-style videos that feel native to Reels and Stories.</p>
+          </article>
+          <article class="reel">
+            <div class="reel-phone"><div class="ad-video v2"><span class="play"></span><span class="reel-tag">4:5 · Demo</span></div></div>
+            <h3>Product demos</h3><p>Show the product working, highlight the benefit and handle objections in 15 seconds.</p>
+          </article>
+          <article class="reel">
+            <div class="reel-phone"><div class="ad-video v3"><span class="play"></span><span class="reel-tag">9:16 · Founder</span></div></div>
+            <h3>Founder stories</h3><p>Put a face to the brand. This is often the highest-trust format for new audiences.</p>
+          </article>
+          <article class="reel">
+            <div class="reel-phone"><div class="ad-video v4"><span class="reel-tag">1:1 · Static</span><span class="static-copy">Stop<br/>guessing.<br/><em>Start scaling.</em></span></div></div>
+            <h3>Static &amp; carousel</h3><p>Fast-to-test statics for finding winning angles cheaply.</p>
+          </article>
+          <article class="reel">
+            <div class="reel-phone lp"><div class="lp-mock"><span class="lp-bar"></span><span class="lp-h"></span><span class="lp-h short"></span><span class="lp-btn"></span><span class="lp-img"></span><span class="lp-row"><i></i><i></i><i></i></span></div><span class="reel-tag">Landing page</span></div>
+            <h3>Landing pages</h3><p>The same message from ad to page, built to move visitors to action.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="section stats-section">
+      <div class="container">
+        <div class="stats glass reveal">
+          <div class="stat"><span class="stat-val"><span data-count="3">0</span>-in-1</span><span class="stat-label">Ads, creative &amp; pages under one roof</span></div>
+          <div class="stat"><span class="stat-val"><span data-count="48">0</span>h</span><span class="stat-label">Average turnaround on new creative</span></div>
+          <div class="stat"><span class="stat-val"><span data-count="14">0</span> days</span><span class="stat-label">From kickoff to campaigns live</span></div>
+          <div class="stat"><span class="stat-val">&lt;<span data-count="2">0</span>s</span><span class="stat-label">Target landing page load time</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY -->
+    <section class="section why">
+      <div class="container why-grid">
+        <div class="why-copy">
+          <span class="kicker reveal">Why <span data-brand="name">Scalora</span></span>
+          <h2 class="reveal">Creative and media, <span class="gradient-text">in the same room.</span></h2>
+          <p class="reveal">When the people buying your ads also make your creative and build your pages, test results go straight into the next shoot and the next page update. That shorter feedback loop is how campaigns keep improving.</p>
+          <a href="#contact" class="btn btn-ghost reveal">Talk to us</a>
+        </div>
+        <div class="why-cards">
+          <div class="why-card glass reveal"><b>No hand-offs</b><p>One team and one brief, with nothing lost between agencies.</p></div>
+          <div class="why-card glass reveal"><b>Data-led creative</b><p>Every shoot is planned around what the numbers say is working.</p></div>
+          <div class="why-card glass reveal"><b>Transparent reporting</b><p>Plain-English updates on spend, results and next steps.</p></div>
+          <div class="why-card glass reveal"><b>You own everything</b><p>Your ad account, your pixel, your pages, your footage.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+      <div class="container faq-wrap">
+        <div class="section-head">
+          <span class="kicker reveal">FAQ</span>
+          <h2 class="reveal">Questions, <span class="gradient-text">answered.</span></h2>
+        </div>
+        <div class="faq">
+          <details class="reveal glass"><summary>What ad spend do you work with?</summary><p>We work with brands at most stages. As a guide, a monthly Meta budget of around £1,500 or more gives us enough data to test properly and scale what works.</p></details>
+          <details class="reveal glass"><summary>Do I need all three services?</summary><p>No. You can start with ads, creative or a landing page on its own. They do work best together, because each one makes the others perform better.</p></details>
+          <details class="reveal glass"><summary>Where do you shoot?</summary><p>On location at your business, in a studio, or with remote creators for UGC. We'll recommend whatever suits your product and budget.</p></details>
+          <details class="reveal glass"><summary>How soon will I see results?</summary><p>Campaigns are usually live within two weeks of kickoff. The first 30 days are about testing and learning, and scaling begins once winners emerge.</p></details>
+          <details class="reveal glass"><summary>Are there long contracts?</summary><p>No. We work on a rolling monthly basis after an initial setup period. We'd rather keep you because of results than because of a contract.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="section contact" id="contact">
+      <div class="container">
+        <div class="contact-card glass reveal">
+          <div class="contact-glow" aria-hidden="true"></div>
+          <div class="contact-copy">
+            <span class="kicker">Let's talk</span>
+            <h2>Ready to <span class="gradient-text">scale?</span></h2>
+            <p>Book a free 30-minute strategy call. We'll review your current ads and funnel and show you where the quickest wins are, with no obligation.</p>
+            <a class="contact-email" href="mailto:hello@scalora.co" data-brand-email>hello@scalora.co</a>
+          </div>
+          <form class="contact-form" novalidate>
+            <div class="field"><input id="f-name" name="name" required placeholder=" " /><label for="f-name">Your name</label></div>
+            <div class="field"><input id="f-email" name="email" type="email" required placeholder=" " /><label for="f-email">Email</label></div>
+            <div class="field"><input id="f-site" name="website" placeholder=" " /><label for="f-site">Website or Instagram</label></div>
+            <div class="field">
+              <select id="f-service" name="service" required>
+                <option value="" disabled selected hidden></option>
+                <option>Meta Ads Management</option>
+                <option>Ad Creative &amp; Videography</option>
+                <option>Landing Page</option>
+                <option>The full package</option>
+              </select>
+              <label for="f-service">What do you need?</label>
+            </div>
+            <button class="btn btn-primary btn-block" type="submit">Request my strategy call</button>
+            <p class="form-note" role="status"></p>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <a href="#top" class="logo"><span class="logo-mark" data-brand-mark></span><span class="logo-word" data-brand="name">Scalora</span></a>
+      <p class="footer-tag" data-brand="tagline">Ads that scale. Pages that convert.</p>
+      <nav class="footer-links"><a href="#services">Services</a><a href="#process">Process</a><a href="#work">Work</a><a href="#contact">Contact</a></nav>
+      <p class="footer-copy">© <span data-year></span> <span data-brand="name">Scalora</span>. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- Brand preview switcher (disable via SHOW_BRAND_SWITCHER in brands.js) -->
+  <div class="brand-switcher glass" hidden>
+    <span>Preview name</span>
+    <div class="brand-options"></div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
