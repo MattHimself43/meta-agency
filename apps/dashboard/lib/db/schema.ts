@@ -310,6 +310,11 @@ export const clients = pgTable(
     healthScore: smallint("health_score"),
     setupFeeWaived: boolean("setup_fee_waived").notNull().default(false),
     lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
+    /** Answers to the niche's intake form (the only facts ads may use). */
+    intake: jsonb("intake").$type<Record<string, string>>().notNull().default(sql`'{}'::jsonb`),
+    brandColours: jsonb("brand_colours").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    pageUrl: text("page_url"),
+    instagramHandle: text("instagram_handle"),
     isDemo: demo(),
     ...timestamps(),
   },
@@ -517,6 +522,9 @@ export const campaignPlans = pgTable("campaign_plans", {
   specialAdCategoryConfirmed: boolean("special_ad_category_confirmed").notNull().default(false),
   ads: jsonb("ads").$type<unknown>().notNull().default(sql`'[]'::jsonb`),
   status: campaignStatus("status").notNull().default("draft"),
+  notes: text("notes"),
+  launchedAt: timestamp("launched_at", { withTimezone: true }),
+  launchedBy: uuid("launched_by"),
   metaCampaignId: text("meta_campaign_id"),
   metaIds: jsonb("meta_ids").$type<unknown>().notNull().default(sql`'{}'::jsonb`),
   isDemo: demo(),
@@ -644,6 +652,8 @@ export const invoices = pgTable(
     clientSnapshot: jsonb("client_snapshot").$type<unknown>(),
     pdfPath: text("pdf_path"),
     paymentLink: text("payment_link"),
+    /** Overdue reminders already drafted: { "3": iso, "10": iso, "21": iso } */
+    remindersSent: jsonb("reminders_sent").$type<Record<string, string>>().notNull().default(sql`'{}'::jsonb`),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     paidAt: timestamp("paid_at", { withTimezone: true }),
     isDemo: demo(),
@@ -898,4 +908,33 @@ export const savedViews = pgTable("saved_views", {
   name: text("name").notNull(),
   query: text("query").notNull(),
   ...timestamps(),
+});
+
+/** Every budget change on a campaign plan. Increases over 20 % in 7 days or above the owner limit need approval. */
+export const budgetChanges = pgTable("budget_changes", {
+  id: id(),
+  campaignPlanId: uuid("campaign_plan_id")
+    .notNull()
+    .references(() => campaignPlans.id, { onDelete: "cascade" }),
+  oldBudgetUsdCents: bigint("old_budget_usd_cents", { mode: "number" }).notNull(),
+  newBudgetUsdCents: bigint("new_budget_usd_cents", { mode: "number" }).notNull(),
+  status: text("status").notNull().default("pending"), // pending | applied | rejected
+  reason: text("reason"),
+  approvalId: uuid("approval_id"),
+  requestedBy: text("requested_by").notNull().default("user"),
+  appliedAt: timestamp("applied_at", { withTimezone: true }),
+  isDemo: demo(),
+  ...timestamps(),
+});
+
+/**
+ * File bytes for the database storage driver (local dev / when Supabase Storage isn't configured).
+ * With SUPABASE_SERVICE_ROLE_KEY set, files live in Supabase Storage and only metadata is kept in assets.
+ */
+export const storedFiles = pgTable("stored_files", {
+  path: text("path").primaryKey(),
+  contentType: text("content_type").notNull(),
+  size: integer("size").notNull(),
+  data: text("data").notNull(), // base64
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
