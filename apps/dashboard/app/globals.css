@@ -120,3 +120,8 @@
   .ambient-orb-1 { width: 380px; height: 380px; }
   .ambient-orb-2, .ambient-orb-3 { display: none; }
 }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
