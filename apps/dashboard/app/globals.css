@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Theme = the Scalora landing page (apps/landing/styles.css): deep navy, blue→cyan gradient,
+ * glass surfaces, Space Grotesk headings, Inter body. Dark only, like the landing page.
+ * shadcn-style tokens are HSL triplets so Tailwind opacity modifiers (bg-primary/15) work.
+ */
+@layer base {
+  :root {
+    color-scheme: dark;
+    --font-display: "Space Grotesk";
+    --font-body: "Inter";
+
+    --background: 225 60% 5%;          /* #050914 */
+    --foreground: 219 100% 96%;        /* #eaf1ff */
+    --card: 221 56% 10%;               /* solid fallback; cards use .glass */
+    --card-foreground: 219 100% 96%;
+    --primary: 223 100% 59%;           /* #2e6bff */
+    --primary-foreground: 213 77% 7%;  /* #04101f — dark text on the gradient */
+    --secondary: 222 50% 14%;
+    --secondary-foreground: 219 100% 96%;
+    --muted: 222 45% 12%;
+    --muted-foreground: 220 32% 68%;   /* #93a4c6 */
+    --accent: 222 55% 16%;
+    --accent-foreground: 219 100% 96%;
+    --destructive: 0 84% 64%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 219 43% 15%;             /* rgba(120,170,255,.14) on navy */
+    --input: 219 43% 19%;
+    --ring: 191 100% 69%;              /* #5fe3ff */
+    --radius: 0.9rem;
+
+    /* Raw landing tokens */
+    --surface: rgba(18, 32, 64, 0.42);
+    --surface-strong: rgba(20, 36, 72, 0.7);
+    --line: rgba(120, 170, 255, 0.14);
+    --line-strong: rgba(120, 170, 255, 0.3);
+    --cyan: #5fe3ff;
+    --grad: linear-gradient(100deg, #2e6bff 0%, #4f9dff 45%, #5fe3ff 100%);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { @apply border-border; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  h1, h2, h3 {
+    font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  ::selection { background: rgba(95, 227, 255, 0.25); }
+}
+
+@layer components {
+  .glass {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+  .glass-strong {
+    background: linear-gradient(160deg, rgba(30, 52, 104, 0.55), rgba(10, 18, 38, 0.6));
+    border: 1px solid var(--line-strong);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+  }
+  .gradient-text {
+    background: var(--grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .btn-grad {
+    background: var(--grad);
+    color: #04101f;
+    box-shadow: 0 10px 30px -10px rgba(46, 107, 255, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+  .btn-grad:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 40px -12px rgba(95, 227, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  .btn-ghost-line {
+    border: 1px solid var(--line-strong);
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .btn-ghost-line:hover { border-color: var(--cyan); background: rgba(95, 227, 255, 0.06); }
+  /* Landing "kicker": cyan uppercase label with a glowing rule */
+  .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--cyan);
+  }
+  .kicker::before { content: ""; width: 18px; height: 1px; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .glow-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+}
+
+/* Ambient background — same grid + orbs as the landing page, kept still for an all-day work screen. */
+.ambient { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #050914; }
+.ambient-grid {
+  position: absolute; inset: -10% -10% 0;
+  background-image:
+    linear-gradient(rgba(90, 140, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 140, 255, 0.06) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 20%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 20%, #000 30%, transparent 75%);
+}
+.ambient-orb { position: absolute; border-radius: 50%; filter: blur(90px); }
+.ambient-orb-1 { width: 620px; height: 620px; background: #1f4fd8; top: -260px; left: -180px; opacity: 0.4; }
+.ambient-orb-2 { width: 520px; height: 520px; background: #0aa3d6; top: 30%; right: -260px; opacity: 0.22; }
+.ambient-orb-3 { width: 700px; height: 700px; background: #1236a0; bottom: -420px; left: 30%; opacity: 0.3; }
+.ambient-noise {
+  position: absolute; inset: 0; opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (max-width: 767px) {
+  .ambient-orb-1 { width: 380px; height: 380px; }
+  .ambient-orb-2, .ambient-orb-3 { display: none; }
+}

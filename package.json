@@ -1,0 +1,16 @@
+{
+  "name": "agencyos-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/dashboard"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/dashboard",
+    "build": "npm run build -w apps/dashboard",
+    "test": "npm run test -w apps/dashboard",
+    "seed": "npm run seed -w apps/dashboard"
+  },
+  "overrides": {
+    "postgres": "3.4.9"
+  }
+}
