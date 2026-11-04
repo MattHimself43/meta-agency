@@ -15,6 +15,8 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Notice, PageHeader, SectionLabel } from "@/components/page-header";
 import { updateFlagsAction, updateOperationsAction, updateProfileAction } from "../actions";
+import { inviteMemberAction, revokeMemberAction } from "../connect-actions";
+import { teamMembers } from "@/lib/team";
 import type { FeatureFlags } from "@/lib/db/schema";
 
 export const metadata = { title: "Settings" };
@@ -184,8 +186,40 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               ))}
             </CardContent>
           </Card>
+          <TeamCard enabled={s.featureFlags.team_seats} notice={saved === "team"} />
         </div>
       </div>
     </>
+  );
+}
+
+async function TeamCard({ enabled, notice }: { enabled: boolean; notice: boolean }) {
+  const { invites, staff } = await teamMembers();
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Team seats</CardTitle>
+        <CardDescription>Account managers can work leads, clients and creatives. They can&apos;t see billing or settings, launch campaigns or raise budgets — enforced on the server. {enabled ? "" : "Turn on the Team seats flag to invite."}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {notice ? <Notice>Team updated.</Notice> : null}
+        {enabled ? (
+          <form action={inviteMemberAction} className="flex flex-wrap items-end gap-2">
+            <Field label="Email"><Input name="email" type="email" required className="w-64" /></Field>
+            <Button size="sm">Invite account manager</Button>
+          </form>
+        ) : null}
+        {invites.length || staff.length ? (
+          <ul className="space-y-1 text-sm">
+            {invites.map((i) => (
+              <li key={i.id} className="flex flex-wrap items-center justify-between gap-2">
+                <span>{i.email} <Badge variant={i.status === "accepted" ? "low" : i.status === "revoked" ? "muted" : "medium"}>{i.status}</Badge></span>
+                {i.status !== "revoked" ? <form action={revokeMemberAction}><input type="hidden" name="email" value={i.email} /><Button size="xs" variant="ghost">Remove access</Button></form> : null}
+              </li>
+            ))}
+          </ul>
+        ) : <p className="text-sm text-muted-foreground">Just you for now.</p>}
+      </CardContent>
+    </Card>
   );
 }

@@ -1,4 +1,5 @@
-import { AlertTriangle, ShieldCheck, Star } from "lucide-react";
+import { Trophy, AlertTriangle, ShieldCheck, Star } from "lucide-react";
+import { toggleWinnerAction } from "@/app/(dashboard)/dashboard/connect-actions";
 import type { schema } from "@/lib/db";
 import type { HonestyResult } from "@/lib/creatives/honesty";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ export function CreativeCard({ c, back, clientName, assets }: { c: Creative; bac
         {h ? (
           h.ok ? <Badge variant="low"><ShieldCheck className="h-3 w-3" /> facts check out</Badge> : c.honestyOverrideReason ? <Badge variant="medium">override: {c.honestyOverrideReason.slice(0, 30)}</Badge> : <Badge variant="high"><AlertTriangle className="h-3 w-3" /> {h.mismatches.length} unverified</Badge>
         ) : null}
+        {c.winner ? <Badge variant="low" title={c.winnerNote ?? undefined}><Trophy className="h-3 w-3" /> winner</Badge> : null}
         {clientName ? <span className="ml-auto truncate text-[11px] text-[#5f6f92]">{clientName}</span> : null}
       </div>
       {c.mediaPath ? (
@@ -48,6 +50,13 @@ export function CreativeCard({ c, back, clientName, assets }: { c: Creative; bac
         {c.status === "client_review" ? act("approved", "Approve for client", "outline", Boolean(blocked)) : null}
         {c.status === "approved" ? act("live", "Mark live", "outline") : null}
         {c.status === "live" ? act("fatigued", "Mark fatigued", "ghost") : null}
+        {["live", "fatigued", "retired", "approved"].includes(c.status) ? (
+          <form action={toggleWinnerAction}>
+            <input type="hidden" name="id" value={c.id} />
+            <input type="hidden" name="back" value={back} />
+            <Button size="xs" variant="ghost"><Trophy /> {c.winner ? "Not a winner" : "Winner"}</Button>
+          </form>
+        ) : null}
         {c.status !== "rejected" && c.status !== "live" ? act("rejected", "Reject", "ghost") : null}
       </div>
       <details className="mt-2">

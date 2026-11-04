@@ -546,6 +546,9 @@ export const creatives = pgTable("creatives", {
   status: creativeStatus("status").notNull().default("draft"),
   honestyCheck: jsonb("honesty_check").$type<unknown>(),
   honestyOverrideReason: text("honesty_override_reason"),
+  /** v2 winning-ad library: kept for reuse when an ad beat the client's target. */
+  winner: boolean("winner").notNull().default(false),
+  winnerNote: text("winner_note"),
   clientComment: text("client_comment"),
   metaAdId: text("meta_ad_id"),
   aiRunId: uuid("ai_run_id"),
@@ -652,6 +655,8 @@ export const invoices = pgTable(
     clientSnapshot: jsonb("client_snapshot").$type<unknown>(),
     pdfPath: text("pdf_path"),
     paymentLink: text("payment_link"),
+    /** sha256 of the client's /pay/<token> link (WiPay on). Raw token shown once; rotate to reissue. */
+    payTokenHash: text("pay_token_hash"),
     /** Overdue reminders already drafted: { "3": iso, "10": iso, "21": iso } */
     remindersSent: jsonb("reminders_sent").$type<Record<string, string>>().notNull().default(sql`'{}'::jsonb`),
     sentAt: timestamp("sent_at", { withTimezone: true }),
@@ -659,7 +664,7 @@ export const invoices = pgTable(
     isDemo: demo(),
     ...timestamps(),
   },
-  (t) => [uniqueIndex("invoices_number_key").on(t.number), uniqueIndex("invoices_client_period_key").on(t.clientId, t.periodKey)],
+  (t) => [uniqueIndex("invoices_number_key").on(t.number), uniqueIndex("invoices_client_period_key").on(t.clientId, t.periodKey), uniqueIndex("invoices_pay_token_hash_key").on(t.payTokenHash)],
 );
 
 export const invoiceLines = pgTable("invoice_lines", {
@@ -938,3 +943,108 @@ export const storedFiles = pgTable("stored_files", {
   data: text("data").notNull(), // base64
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/* ------------------------------------------------------------------ */
+/* Phase 3: integrations                                               */
+/* ------------------------------------------------------------------ */
+
+/** One WiPay hosted-checkout attempt. Paid only after the response hash is verified server-side. */
+export const paymentAttempts = pgTable(
+  "payment_attempts",
+  {
+    id: id(),
+    invoiceId: uuid("invoice_id")
+      .notNull()
+      .references(() => invoices.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull().default("wipay"),
+    environment: text("environment").notNull(), // sandbox | live
+    orderId: text("order_id").notNull(),
+    /** Exactly what was sent as `total` (2 dp) — the hash is computed over this, never the response total. */
+    totalSent: text("total_sent").notNull(),
+    currency: currency("currency").notNull().default("TTD"),
+    checkoutUrl: text("checkout_url"),
+    transactionId: text("transaction_id"),
+    status: text("status").notNull().default("created"), // created | success | failed | error | rejected
+    response: jsonb("response").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    ...timestamps(),
+  },
+  (t) => [uniqueIndex("payment_attempts_order_key").on(t.orderId), index("payment_attempts_invoice_idx").on(t.invoiceId)],
+);
+
+/** Image/video variants generated from a client's own photo (Higgsfield behind its flag). */
+export const creativeGenerations = pgTable(
+  "creative_generations",
+  {
+    id: id(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    sourceAssetId: uuid("source_asset_id").references(() => assets.id, { onDelete: "set null" }),
+    provider: text("provider").notNull().default("higgsfield"),
+    model: text("model").notNull(),
+    format: text("format").notNull(), // 1:1 | 4:5 | 9:16
+    prompt: text("prompt").notNull(),
+    requestId: text("request_id"),
+    status: text("status").notNull().default("queued"), // queued | in_progress | completed | failed | nsfw | canceled | error
+    outputAssetIds: jsonb("output_asset_ids").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    error: text("error"),
+    polls: integer("polls").notNull().default(0),
+    ...timestamps(),
+  },
+  (t) => [index("creative_generations_client_idx").on(t.clientId)],
+);
+
+/** v2: leads from Meta instant forms, pulled with the System User token. */
+export const metaLeads = pgTable(
+  "meta_leads",
+  {
+    id: id(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    metaLeadId: text("meta_lead_id").notNull(),
+    formId: text("form_id"),
+    formName: text("form_name"),
+    adName: text("ad_name"),
+    fields: jsonb("fields").$type<Record<string, string>>().notNull().default(sql`'{}'::jsonb`),
+    createdTime: timestamp("created_time", { withTimezone: true }),
+    status: text("status").notNull().default("new"), // new | contacted | qualified | sold | junk
+    note: text("note"),
+    isDemo: demo(),
+    ...timestamps(),
+  },
+  (t) => [uniqueIndex("meta_leads_meta_id_key").on(t.metaLeadId), index("meta_leads_client_idx").on(t.clientId)],
+);
+
+/** v2: sales the client reports (cars sold, properties sold) for cost per sale. */
+export const clientSales = pgTable(
+  "client_sales",
+  {
+    id: id(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    date: date("date").notNull(),
+    count: integer("count").notNull().default(1),
+    valueTtdCents: bigint("value_ttd_cents", { mode: "number" }),
+    note: text("note"),
+    isDemo: demo(),
+    ...timestamps(),
+  },
+  (t) => [index("client_sales_client_idx").on(t.clientId, t.date)],
+);
+
+/** v2: invitations for account managers (team_seats flag). Token hashed; accepted by signing in with that email. */
+export const teamInvites = pgTable(
+  "team_invites",
+  {
+    id: id(),
+    email: text("email").notNull(),
+    role: userRole("role").notNull().default("account_manager"),
+    status: text("status").notNull().default("pending"), // pending | accepted | revoked
+    invitedBy: uuid("invited_by"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    ...timestamps(),
+  },
+  (t) => [uniqueIndex("team_invites_email_key").on(t.email)],
+);

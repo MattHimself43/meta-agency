@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ExpensesTab } from "@/components/connect/expenses";
 import { asc } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { requireOwnerPage } from "@/lib/auth";
@@ -21,12 +22,12 @@ const TONE = { draft: "muted", approved: "default", sent: "medium", paid: "low",
 export default async function BillingPage({ searchParams }: { searchParams: Promise<{ tab?: string; status?: string; notice?: string; error?: string }> }) {
   await requireOwnerPage();
   const sp = await searchParams;
-  const tab = sp.tab === "packages" ? "packages" : "invoices";
+  const tab = sp.tab === "packages" ? "packages" : sp.tab === "expenses" ? "expenses" : "invoices";
   const [rev, settings] = await Promise.all([revenueSummary(), getSettings()]);
 
   return (
     <>
-      <PageHeader kicker="Business" title="Billing" description={`Invoices in TT$ for your fee only — clients pay Meta directly. ${settings.featureFlags.wipay ? "WiPay flag is on (Phase 3)." : "Payment by bank transfer; mark paid by hand."}`} actions={<form action={runInvoicesNowAction}><Button size="sm" variant="secondary">Draft this month&apos;s invoices</Button></form>} />
+      <PageHeader kicker="Business" title="Billing" description={`Invoices in TT$ for your fee only — clients pay Meta directly. ${settings.featureFlags.wipay ? "WiPay card payments are on — clients get a pay link." : "Payment by bank transfer; mark paid by hand."}`} actions={<form action={runInvoicesNowAction}><Button size="sm" variant="secondary">Draft this month&apos;s invoices</Button></form>} />
       {sp.error ? <Notice tone="error">{sp.error}</Notice> : null}
       {sp.notice ? <Notice>{sp.notice === "saved" ? "Saved." : sp.notice}</Notice> : null}
       <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -36,9 +37,9 @@ export default async function BillingPage({ searchParams }: { searchParams: Prom
         <div className="glass rounded-[18px] p-4"><p className="text-xs text-muted-foreground">Collected by niche</p>{rev.byNiche.length ? rev.byNiche.map((n) => <p key={n.niche} className="text-sm text-[#c2d1ef]">{n.niche}: {formatMoney(n.cents, "TTD", { decimals: false })}</p>) : <p className="text-sm text-[#5f6f92]">No payments yet</p>}</div>
       </section>
       <nav className="mb-4 flex gap-2 text-sm">
-        {["invoices", "packages"].map((t) => <Link key={t} href={`/dashboard/billing?tab=${t}`} className={cn("rounded-full px-4 py-1.5 capitalize", tab === t ? "btn-grad font-semibold" : "btn-ghost-line text-muted-foreground")}>{t}</Link>)}
+        {["invoices", "expenses", "packages"].map((t) => <Link key={t} href={`/dashboard/billing?tab=${t}`} className={cn("rounded-full px-4 py-1.5 capitalize", tab === t ? "btn-grad font-semibold" : "btn-ghost-line text-muted-foreground")}>{t}</Link>)}
       </nav>
-      {tab === "invoices" ? <Invoices status={sp.status} /> : <Packages />}
+      {tab === "invoices" ? <Invoices status={sp.status} /> : tab === "expenses" ? <ExpensesTab collectedThisMonth={rev.collectedThisMonth} rate={Number(settings.exchangeRate)} /> : <Packages />}
     </>
   );
 }

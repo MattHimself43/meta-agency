@@ -8,7 +8,7 @@ export type NavItem = {
   ownerOnly?: boolean;
 };
 
-export const CURRENT_PHASE = 2;
+export const CURRENT_PHASE = 3;
 
 export const NAV: { section: string; items: NavItem[] }[] = [
   {
@@ -40,7 +40,7 @@ export const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard/billing", label: "Billing", icon: "receipt", phase: 2, ownerOnly: true },
       { href: "/dashboard/analytics", label: "Analytics", icon: "chart", phase: 2 },
-      { href: "/dashboard/time", label: "Time tracker", icon: "clock", phase: 3, v2: true },
+      { href: "/dashboard/time", label: "Time tracker", icon: "clock", phase: 3 },
     ],
   },
   {

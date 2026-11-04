@@ -19,12 +19,13 @@ import { Badge } from "@/components/ui/badge";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Notice, PageHeader } from "@/components/page-header";
+import { GeneratePanel, LeadInbox, MetaAccessPanel, PullInsightsButton, SalesPanel } from "@/components/connect/client-panels";
 import { Uploader } from "@/components/portal/uploader";
 import { CreativeCard } from "@/components/creatives/creative-card";
 import { cn } from "@/lib/utils";
 import { createPlanAction, generateCopyAction, generateReportAction, importCsvAction, ownerStepAction, rotatePortalAction, staffIntakeAction, updateClientAction } from "../../deliver-actions";
 
-const TABS = ["overview", "assets", "creatives", "campaigns", "performance", "reports", "billing", "details"] as const;
+const TABS = ["overview", "assets", "creatives", "campaigns", "performance", "leads", "reports", "billing", "details"] as const;
 type Tab = (typeof TABS)[number];
 const sel = "h-10 w-full rounded-xl border border-[var(--line)] bg-[rgba(8,16,31,0.6)] px-3 text-sm text-foreground";
 const usd = (c: number | null | undefined) => (c == null ? "—" : `US$${(c / 100).toFixed(2)}`);
@@ -70,6 +71,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       {tab === "creatives" ? <Creatives clientId={id} back={back} /> : null}
       {tab === "campaigns" ? <Campaigns ctx={ctx} /> : null}
       {tab === "performance" ? <Performance ctx={ctx} /> : null}
+      {tab === "leads" ? <LeadInbox clientId={id} /> : null}
       {tab === "reports" ? <Reports clientId={id} /> : null}
       {tab === "billing" ? <Billing clientId={id} /> : null}
       {tab === "details" ? <Details ctx={ctx} /> : null}
@@ -128,6 +130,7 @@ async function Overview({ ctx, isOwner }: { ctx: Ctx; isOwner: boolean }) {
             </div>
           </CardContent>
         </Card>
+        <MetaAccessPanel clientId={c.id} adAccountId={c.adAccountId} pageId={c.pageId} pixelId={c.pixelId} />
 
         <Card>
           <CardHeader><CardTitle>Intake answers</CardTitle><CardDescription>The only facts ads may use. You can fill these in for the client.</CardDescription></CardHeader>
@@ -161,6 +164,7 @@ async function Assets({ clientId }: { clientId: string }) {
   const assets = await db.select().from(schema.assets).where(eq(schema.assets.clientId, clientId)).orderBy(desc(schema.assets.createdAt));
   return (
     <div className="space-y-6">
+      <GeneratePanel clientId={clientId} />
       <Card><CardHeader><CardTitle className="flex items-center gap-2"><Upload className="h-4 w-4 text-brand-cyan" /> Upload</CardTitle><CardDescription>Tag files (car model, property, lot) so they&apos;re easy to find when building ads.</CardDescription></CardHeader><CardContent><Uploader clientId={clientId} /></CardContent></Card>
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {assets.map((a) => (
@@ -259,6 +263,7 @@ async function Performance({ ctx }: { ctx: Ctx }) {
   const pace = planMonth ? Math.round((mtd / (planMonth * (dayOfMonth / 30))) * 100) : null;
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap gap-2"><PullInsightsButton clientId={c.id} /></div>
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
           { k: "Yesterday", v: usd(snap.yesterday.spend), s: `${snap.yesterday.results} results · ${usd(snap.yesterday.cpr)} each` },
@@ -293,6 +298,7 @@ async function Performance({ ctx }: { ctx: Ctx }) {
           </CardContent>
         </Card>
       </div>
+      <SalesPanel clientId={c.id} />
     </div>
   );
 }

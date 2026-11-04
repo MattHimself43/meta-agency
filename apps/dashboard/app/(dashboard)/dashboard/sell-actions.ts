@@ -278,6 +278,19 @@ export async function markSentAction(form: FormData) {
   done(back, { notice: "sent" });
 }
 
+export async function sendGmailAction(form: FormData) {
+  const actor = await requireStaff();
+  const id = uuid.parse(form.get("id"));
+  const back = (form.get("back") as string) || "/dashboard";
+  try {
+    const { sendViaGmail } = await import("@/lib/outreach/gmail-send");
+    await sendViaGmail(id, actor.userId);
+  } catch (e) {
+    done(back, { error: errMsg(e) });
+  }
+  done(back, { notice: "sent" });
+}
+
 export async function recordReplyAction(form: FormData) {
   const actor = await requireStaff();
   const id = uuid.parse(form.get("leadId"));

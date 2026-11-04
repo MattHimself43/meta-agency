@@ -20,6 +20,7 @@ const FILTERS = [
   { key: "client", label: "With client", statuses: ["client_review", "rejected"] },
   { key: "ready", label: "Approved", statuses: ["approved", "live"] },
   { key: "tired", label: "Fatigued", statuses: ["fatigued"] },
+  { key: "winners", label: "Winning ads", statuses: null },
 ] as const;
 const sel = "h-10 w-full rounded-xl border border-[var(--line)] bg-[rgba(8,16,31,0.6)] px-3 text-sm text-foreground";
 
@@ -29,7 +30,7 @@ export default async function CreativeStudio({ searchParams }: { searchParams: P
   const filter = FILTERS.find((f) => f.key === sp.f) ?? FILTERS[1];
   const clients = await db.select({ id: schema.clients.id, name: schema.clients.name }).from(schema.clients).where(inArray(schema.clients.status, ["onboarding", "active", "paused"])).orderBy(asc(schema.clients.name));
   const clientId = clients.find((c) => c.id === sp.client)?.id;
-  const conds = [filter.statuses ? inArray(schema.creatives.status, [...filter.statuses]) : undefined, clientId ? eq(schema.creatives.clientId, clientId) : undefined].filter(Boolean);
+  const conds = [filter.statuses ? inArray(schema.creatives.status, [...filter.statuses]) : undefined, filter.key === "winners" ? eq(schema.creatives.winner, true) : undefined, clientId ? eq(schema.creatives.clientId, clientId) : undefined].filter(Boolean);
   const rows = await db.select({ c: schema.creatives, client: schema.clients.name }).from(schema.creatives).innerJoin(schema.clients, eq(schema.clients.id, schema.creatives.clientId)).where(conds.length ? and(...(conds as never[])) : undefined).orderBy(desc(schema.creatives.createdAt)).limit(120);
   const higgsfield = await isEnabled("higgsfield");
   const back = `/dashboard/creative?f=${filter.key}${clientId ? `&client=${clientId}` : ""}`;

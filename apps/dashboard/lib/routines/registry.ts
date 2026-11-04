@@ -13,7 +13,7 @@ import { rescoreLeads } from "@/lib/leads/service";
 import { TT_AREAS } from "@/lib/leads/research";
 import { aiAvailable } from "@/lib/ai/client";
 import type { RoutineHandler } from "./types";
-import { creativeRefresh, invoiceChaser, monthEndClose, morningCheck, onboardingChaser, weeklyReports, weeklyReview } from "./deliver";
+import { creativeRefresh, inboxSync, invoiceChaser, monthEndClose, morningCheck, onboardingChaser, weeklyReports, weeklyReview } from "./deliver";
 
 const notBuilt =
   (key: string): RoutineHandler =>
@@ -110,12 +110,13 @@ export const routineHandlers: Record<string, RoutineHandler> = {
   onboarding_chaser: onboardingChaser,
   invoice_chaser: invoiceChaser,
   weekly_review: weeklyReview,
+  inbox_sync: inboxSync,
 };
 
 export function isBuilt(key: string) {
   return (ROUTINE_PHASE[key] ?? 99) <= CURRENT_PHASE;
 }
-export const CURRENT_PHASE = 2;
+export const CURRENT_PHASE = 3;
 
 function astWeek(d: Date) {
   return formatAst(d, "RRRR-II");

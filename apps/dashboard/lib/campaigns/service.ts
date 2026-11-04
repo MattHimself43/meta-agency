@@ -75,7 +75,7 @@ export async function approvePlan(id: string, actor: Actor) {
   await logAudit({ actorType: "user", actorId: actor.userId, action: "campaign.plan_approved", entityTable: "campaign_plans", entityId: id, approvedBy: actor.userId });
 }
 
-/** Manual mode: Matthias built it in Ads Manager, switched off. (API mode creates it PAUSED in Phase 3.) */
+/** Manual mode: Matthias built it in Ads Manager, switched off. API mode uses lib/meta/build.buildPlanViaApi. */
 export async function markBuilt(id: string, metaCampaignId: string | null, actor: Actor) {
   const [plan] = await db.select().from(schema.campaignPlans).where(eq(schema.campaignPlans.id, id));
   if (!plan) throw new Error("Plan not found");
@@ -95,12 +95,29 @@ export async function launchPlan(id: string, actor: Actor) {
   if (plan.status !== "built_paused" && plan.status !== "paused") throw new Error("Build the campaign (paused) before launching.");
   const [limit] = await db.select().from(schema.onboardingSteps).where(and(eq(schema.onboardingSteps.clientId, plan.clientId), eq(schema.onboardingSteps.stepKey, "spending_limit")));
   if (!limit || limit.status !== "done") throw new Error("Confirm the client's account spending limit (onboarding step) before launching.");
+  // API mode: flip the PAUSED objects to ACTIVE with a one-time grant that only an owner Actor can obtain.
+  const { metaMode } = await import("@/lib/meta/client");
+  if ((plan.metaIds as { campaignId?: string })?.campaignId && (await metaMode()) === "api") {
+    const { issueLaunchGrant, spendGrant } = await import("@/lib/meta/guard");
+    const { activateViaApi } = await import("@/lib/meta/build");
+    const grant = issueLaunchGrant(actor, id);
+    try {
+      await activateViaApi(id, grant);
+    } finally {
+      spendGrant(grant);
+    }
+  }
   await db.update(schema.campaignPlans).set({ status: "live", launchedAt: new Date(), launchedBy: actor.userId }).where(eq(schema.campaignPlans.id, id));
   await db.insert(schema.activities).values({ clientId: plan.clientId, type: "note", body: `Campaign launched: ${plan.name}` });
   await logAudit({ actorType: "user", actorId: actor.userId, action: "campaign.launched", entityTable: "campaign_plans", entityId: id, approvedBy: actor.userId });
 }
 
 export async function pausePlan(id: string, actor: Actor) {
+  const { metaMode } = await import("@/lib/meta/client");
+  if ((await metaMode()) === "api") {
+    const { pauseViaApi } = await import("@/lib/meta/build");
+    await pauseViaApi(id, actor.role === "owner" ? "owner" : "staff");
+  }
   await db.update(schema.campaignPlans).set({ status: "paused" }).where(eq(schema.campaignPlans.id, id));
   await logAudit({ actorType: "user", actorId: actor.userId, action: "campaign.paused", entityTable: "campaign_plans", entityId: id });
 }
@@ -142,9 +159,17 @@ export async function requestBudgetChange(id: string, newCents: number, requeste
 export async function applyBudgetChange(changeId: string, actorId: string | null, tx: typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0] = db) {
   const [c] = await tx.select().from(schema.budgetChanges).where(eq(schema.budgetChanges.id, changeId));
   if (!c || c.status !== "pending") return;
+  // API mode: push to Meta first, so a Meta error leaves the change pending instead of out of sync.
+  const [plan] = await tx.select().from(schema.campaignPlans).where(eq(schema.campaignPlans.id, c.campaignPlanId));
+  const { metaMode } = await import("@/lib/meta/client");
+  let pushed = false;
+  if (plan && (plan.metaIds as { adSetIds?: string[] })?.adSetIds?.length && (await metaMode()) === "api") {
+    const { pushBudgetViaApi } = await import("@/lib/meta/build");
+    pushed = await pushBudgetViaApi(plan.id, c.id, c.newBudgetUsdCents, plan.budgetType);
+  }
   await tx.update(schema.campaignPlans).set({ budgetUsdCents: c.newBudgetUsdCents }).where(eq(schema.campaignPlans.id, c.campaignPlanId));
   await tx.update(schema.budgetChanges).set({ status: "applied", appliedAt: new Date() }).where(eq(schema.budgetChanges.id, changeId));
-  await logAudit({ actorType: actorId ? "user" : "system", actorId, action: "campaign.budget_changed", entityTable: "campaign_plans", entityId: c.campaignPlanId, details: { from: c.oldBudgetUsdCents, to: c.newBudgetUsdCents, note: "Update the budget in Ads Manager to match (Manual mode)" } }, tx as never);
+  await logAudit({ actorType: actorId ? "user" : "system", actorId, action: "campaign.budget_changed", entityTable: "campaign_plans", entityId: c.campaignPlanId, details: { from: c.oldBudgetUsdCents, to: c.newBudgetUsdCents, note: pushed ? "Pushed to Meta (API mode)" : "Update the budget in Ads Manager to match (Manual mode)" } }, tx as never);
 }
 
 export async function plansFor(clientId: string) {

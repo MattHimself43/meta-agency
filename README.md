@@ -140,10 +140,12 @@ All AI calls go through `lib/ai/client.ts` → `runPrompt(prompt, input, purpose
 | `/book` | 20-minute call booking | rate limit (5/hour/IP), honeypot, slot re-validated server-side, unique slot index |
 | `/share/audit/<token>`, `/share/proposal/<token>` (+ `/pdf`) | approved documents | 32-byte token stored hashed, rate limit (60/10 min/IP), only `approved` docs |
 | `/api/cron/dispatch` | scheduler | `CRON_SECRET` |
+| `/pay/<token>` | invoice pay page (WiPay on) | 32-byte token stored hashed, rate limit; only lets someone pay that invoice |
+| `/api/payments/wipay/response` | WiPay redirect after checkout | response hash re-computed server-side from the stored total; rate limit |
 | `/portal/<token>` | client onboarding portal | 32-byte token stored hashed, rate limit, files scoped to that client |
 | `/share/report/<token>` (+ `/pdf`) | approved weekly reports | same as other share links |
 
-Wire the landing page's "Book a call" buttons to `https://app.<domain>/book` when you're ready (not changed yet).
+Wire the landing page's "Book a call" buttons to `https://app.<domain>/book` when you're ready (not changed yet — say the word).
 
 ### File storage (Phase 2)
 
@@ -157,18 +159,65 @@ Portal uploads, signatures and signed PDFs go through `lib/storage.ts`:
 `AGENCY_META_BUSINESS_ID` (optional) is shown to clients in the Meta-access step so they know which business to add as
 a partner.
 
+### Integrations (Phase 3)
+
+All of these are optional and switched on per flag. Tokens are stored encrypted with `TOKEN_ENCRYPTION_KEY`
+(32 bytes, base64 or hex — `openssl rand -base64 32`), so set that first.
+
+**Meta Marketing API** (`meta_api`)
+1. Create a Meta developer app (Business type) and add the Marketing API product. Business verification is needed
+   for full access to client ad accounts.
+2. Business Settings → Users → **System users** → add an admin system user, assign it the agency's ad accounts /
+   Pages (clients' accounts are shared to the agency through partner access), then **Generate token** with
+   `ads_management`, `ads_read`, `business_management`, `pages_show_list`, `pages_read_engagement`,
+   `leads_retrieval`.
+3. Paste the token on **Integrations → Meta** (Test shows the system user). Optional: set `META_APP_SECRET` so every
+   call carries `appsecret_proof`. `META_API_VERSION` overrides the version (default `v26.0`).
+4. Turn on the flag. Per client: **Clients → Overview → Check access via Meta API**, then approve a plan and press
+   **Build in Meta (PAUSED)**. Lead-form plans need the instant form ID pasted on the plan.
+5. Manual check on a test ad account before using it for real: build a plan, confirm in Ads Manager that the
+   campaign, ad set and ad are all **Off**, then press Launch and confirm they switch on.
+
+How the "never ACTIVE" rule is enforced: `lib/meta/guard.ts` scans every write for ACTIVE (any status field, any
+depth, inside JSON) and refuses it unless it carries a one-time grant from `issueLaunchGrant`, which needs an owner
+Actor and is only called from `launchPlan`. Creates without a status are forced to PAUSED.
+
+**Google** (`gmail`, `google_calendar`)
+1. Google Cloud console → new project → enable **Gmail API** and **Google Calendar API**.
+2. OAuth consent screen (External; add yourself as a test user while unverified) with scopes `gmail.send`,
+   `gmail.readonly`, `calendar.readonly`, `calendar.events`.
+3. Credentials → OAuth client ID (Web). Authorised redirect URI: `https://<APP_URL>/api/integrations/google/callback`.
+4. Set `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`, redeploy, then **Integrations → Connect Google**.
+
+**Higgsfield** (`higgsfield`) — create a key at console.higgsfield.ai and set `HIGGSFIELD_API_KEY=KEY_ID:KEY_SECRET`
+(or paste it on Integrations). Video variants use `higgsfield-ai/dop/standard` unless you set another model path;
+image variants need an image-edit model path from the console. Extra model parameters (JSON) are sent as-is — check
+the model's page for its input schema.
+
+**WiPay** (`wipay`) — Payments API v1, docs.wipayfinancial.com.
+- Sandbox (default): no keys needed; uses WiPay's public test account (1234567890 / API key 123) on
+  `ttsb.wipayfinancial.com`. Test cards: docs.wipayfinancial.com/payments-api/testing (e.g. Visa 4000000000002719).
+- Live: `WIPAY_ENVIRONMENT=live`, `WIPAY_ACCOUNT_NUMBER`, `WIPAY_API_KEY` (WiPay → Developer → Payment API; register
+  your `APP_URL` as the website there).
+- Response URL (shown on Integrations): `https://<APP_URL>/api/payments/wipay/response`.
+- **Manual sandbox check** on the deployed app: turn the flag on, approve an invoice, press **Mark sent**, open its
+  pay link, **Pay by card**, use a test card, and confirm you land on "Payment received" and the invoice shows
+  *Paid by wipay*.
+- `WIPAY_BASE_URL`, `META_GRAPH_URL`, `HIGGSFIELD_BASE_URL` and the `GOOGLE_*_URL` variables exist only so tests
+  can point at local stand-ins. Never set them in production.
+
 ### Feature flags
 
 Settings → Feature flags (owner only). Everything works with every flag off.
 
 | Flag | Off (default) | On | Needs |
 | --- | --- | --- | --- |
-| `meta_api` | Manual mode: Ads Manager checklists + CSV import | Build campaigns (always PAUSED), read insights | Meta developer app, business verification, `META_APP_ID/SECRET`, System User token (Phase 3) |
-| `gmail` | Copy button + mailto link | Send approved emails, sync replies | `GOOGLE_CLIENT_ID/SECRET` (Phase 3) |
-| `google_calendar` | Availability from Settings | Busy times + today's calls from Calendar | same Google app (Phase 3) |
-| `higgsfield` | "Generate externally and upload" | Generate image/video variants | `HIGGSFIELD_API_KEY` (Phase 3) |
-| `wipay` | Bank transfer details + Mark paid | WiPay hosted payment links + callback | Registered business, `WIPAY_*` (Phase 3) |
-| `team_seats` | Owner only | Invite account managers | v2 |
+| `meta_api` | Manual mode: Ads Manager checklists + CSV import | Build plans PAUSED, owner Launch, insights, access check, lead inbox | System User token (Integrations), optional `META_APP_SECRET` |
+| `gmail` | Copy button + mailto link | Send approved emails, sync replies | `GOOGLE_CLIENT_ID/SECRET` + Connect Google |
+| `google_calendar` | Availability from Settings | Busy times hide /book slots; booked calls added to Calendar | same Google connection |
+| `higgsfield` | "Generate externally and upload" | Image/video variants from client photos | `HIGGSFIELD_API_KEY` (or Integrations) |
+| `wipay` | Bank transfer details + Mark paid | /pay link → WiPay hosted checkout → verified response marks paid | `WIPAY_*` (sandbox works with no keys) |
+| `team_seats` | Owner only | Invite account managers (Settings → Team seats) | Create their Supabase login |
 
 ### Seed data
 

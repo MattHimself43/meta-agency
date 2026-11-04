@@ -6,13 +6,14 @@ import { waLink } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SendActions } from "@/components/sell/send-actions";
-import { markSentAction } from "@/app/(dashboard)/dashboard/sell-actions";
+import { markSentAction, sendGmailAction } from "@/app/(dashboard)/dashboard/sell-actions";
+import { googleReady } from "@/lib/google";
 
 const PURPOSE: Record<string, string> = { outreach_opener: "Opener", followup_day3: "Day 3", followup_day7: "Day 7", reply_draft: "Reply", invoice_reminder: "Invoice reminder", onboarding_nudge: "Onboarding nudge" };
 
 /** Approved messages due today, each with Open in WhatsApp (or email / DM) and Mark sent. */
 export async function TodaySends({ back, limit }: { back: string; limit?: number }) {
-  const [rows, clientRows, settings, wa, email, dm] = await Promise.all([todaysSends(), todaysClientSends(), getSettings(), sentToday("whatsapp"), sentToday("email"), sentToday("dm")]);
+  const [rows, clientRows, settings, wa, email, dm, gmail] = await Promise.all([todaysSends(), todaysClientSends(), getSettings(), sentToday("whatsapp"), sentToday("email"), sentToday("dm"), googleReady("gmail")]);
   const counts = { whatsapp: wa, email, dm };
   const shown = limit ? rows.slice(0, limit) : rows;
   return (
@@ -59,6 +60,13 @@ export async function TodaySends({ back, limit }: { back: string; limit?: number
               <p className="mt-1.5 whitespace-pre-wrap text-sm text-[#c2d1ef]">{m.body}</p>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <SendActions channel={m.channel} waHref={lead.whatsapp ?? lead.phone ? waLink((lead.whatsapp ?? lead.phone)!, m.body ?? "") : null} email={lead.email} subject={m.subject ?? `Quick idea for ${lead.businessName}`} body={m.body ?? ""} pageUrl={lead.facebookUrl ?? lead.instagramUrl} />
+                {gmail && m.channel === "email" && lead.email ? (
+                  <form action={sendGmailAction}>
+                    <input type="hidden" name="id" value={m.id} />
+                    <input type="hidden" name="back" value={back} />
+                    <Button size="sm"><Check /> Send via Gmail</Button>
+                  </form>
+                ) : null}
                 <form action={markSentAction}>
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="back" value={back} />

@@ -1,5 +1,68 @@
 # Changelog
 
+## Phase 3 — Connect and scale (2026-11-04)
+
+Every integration sits behind its feature flag and falls back to Manual mode when off. Credentials are stored
+AES-256-GCM encrypted (`TOKEN_ENCRYPTION_KEY`) and never sent to the browser. New **Integrations** page with
+status (Connected / Expired / Not set up / Disabled / Error) and a Test button per provider.
+
+**Meta Marketing API** (`meta_api` flag + System User token, API v26.0)
+- **Build** an approved plan in the client's ad account: image upload, interest lookup, campaign → ad sets →
+  creatives → ads, **all PAUSED**, with idempotency keys so a retry after an error never duplicates objects.
+  Special ad categories are declared with country TT and restricted targeting; T&T towns map to radius targeting.
+- **The server refuses ACTIVE** from the AI, routines, staff, or any forged call: every write is scanned (including
+  JSON specs) and an activating write needs a one-time launch grant that only the owner's **Launch** button can
+  create (after the spending-limit step). Refusals are written to the audit log. Pausing is always allowed.
+- Budget writes to Meta must reference the budget change the guardrail let through (raises over 20% / above your
+  limit still go to the approval queue first).
+- **Access check** reads the ad account, promotable Pages and pixels; ticks "Agency access verified" and, when Meta
+  reports a spend cap, "Spending limit set".
+- **Insights**: the morning check pulls the last 7 days per client (ad level, daily) into the same table the CSV
+  import fills; a "Pull last 28 days" button on the Performance tab.
+
+**WiPay** (`wipay` flag; sandbox by default) — built from docs.wipayfinancial.com (Payments API v1)
+- Clients get a private `/pay/<token>` link (in the invoice WhatsApp text and PDF) with card and bank-transfer
+  options. Each "Pay by card" starts a fresh WiPay hosted checkout.
+- `/api/payments/wipay/response` re-computes `md5(transaction_id + total we sent + API key)`, checks the order and
+  transaction ids, then marks the invoice paid (idempotent; a replay never double-pays). Tampered or fee-inclusive
+  hashes are rejected and raise an urgent alert. All WiPay code lives in `lib/payments/wipay*.ts` behind
+  `PaymentProvider`.
+
+**Google** (one OAuth connection; `gmail` and `google_calendar` flags)
+- **Send via Gmail** for approved email messages (same limit and do-not-contact checks as Mark sent).
+- **Inbox sync** routine (every 30 min, 7am–9pm): replies from a lead's email become logged replies — the sequence
+  stops, the reply is classified and a response is drafted for approval.
+- **Calendar**: busy times hide clashing /book slots; booked calls are added to your calendar. A calendar error
+  never loses a booking.
+
+**Higgsfield** (`higgsfield` flag) — `CreativeGenerator` interface, Higgsfield implementation
+- Generate image or video variants (1:1, 4:5, 9:16) from a client's own photo on the Assets tab. Input is uploaded
+  with Higgsfield's signed upload URL; a job polls the request each minute and saves the output as a creative asset
+  tagged `generated`. Model paths are configurable (default video model `higgsfield-ai/dop/standard`).
+
+**v2 items**
+- **Lead inbox**: Meta instant-form leads per client (pulled by Inbox sync), with a status per lead.
+- **Cost per sale**: log sales the client reports; month-to-date spend ÷ sales on the Performance tab.
+- **Winning-ad library**: mark a creative as a winner; "Winning ads" filter in the Creative studio.
+- **Pixel check** on the Meta access panel (has it fired in the last 3 days?).
+- **Expenses** tab in Billing (TT$/US$), with collected − expenses for the month.
+- **Time tracker** against the 4-hours-a-week target.
+- **Team seats** (`team_seats` flag): invite an account manager by email; access is granted on their first
+  2FA sign-in; owner can remove access. Account managers still can't see billing/settings, launch or raise budgets.
+- **Live results** in the client portal (last 30 days: spend, chats, leads, cost per result).
+- **WhatsApp me** on alerts (opens WhatsApp to your own number; you press send).
+- Renewal alerts 30 days before the minimum term ends were already part of month-end close.
+- Not built: inventory-to-ad (needs a structured stock feed per dealer).
+
+**Migration** `0004_phase3_connect.sql` — `payment_attempts`, `creative_generations`, `meta_leads`,
+`client_sales`, `team_invites` (RLS on all), `invoices.pay_token_hash`, `creatives.winner`.
+
+**Tests** — 112 (16 new unit tests; 8 new database acceptance tests against local stand-ins for the Graph API and
+WiPay that record every request: PAUSED build, ACTIVE refused on every non-owner path with nothing sent, owner
+launch, budget guardrail, insights upsert, verified payment marks paid once, tampered hashes rejected). The real
+WiPay sandbox and a real Meta test ad account aren't reachable from the build environment — see README for the
+two manual checks on the deployed app.
+
 ## Phase 2 — Deliver (2026-11-04)
 
 **Client portal** (`/portal/<token>`, phone-first, no login)

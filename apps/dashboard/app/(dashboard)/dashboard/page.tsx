@@ -14,6 +14,7 @@ import { approveAllLowRiskAction, resolveAlertAction } from "./actions";
 import { TodaySends } from "@/components/sell/today-sends";
 import { Flash } from "@/components/sell/flash";
 import { todaysCalls } from "@/lib/queries/home";
+import { waLink } from "@/lib/phone";
 
 export const metadata = { title: "Home" };
 
@@ -64,6 +65,11 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
                     <p className="text-sm font-medium">{a.link ? <Link href={a.link} className="hover:underline">{a.title}</Link> : a.title}</p>
                     {a.body ? <p className="truncate text-xs text-muted-foreground">{a.body}</p> : null}
                   </div>
+                  {settings.ownerWhatsapp ? (
+                    <Button asChild size="xs" variant="ghost" title="Send this alert to your own WhatsApp (opens WhatsApp; you press send)">
+                      <a href={waLink(settings.ownerWhatsapp, `AgencyOS alert: ${a.title}${a.body ? ` — ${a.body.slice(0, 300)}` : ""}${a.link ? `\n${process.env.APP_URL ?? ""}${a.link}` : ""}`)} target="_blank" rel="noopener noreferrer">WhatsApp me</a>
+                    </Button>
+                  ) : null}
                   <form action={resolveAlertAction}>
                     <input type="hidden" name="id" value={a.id} />
                     <Button size="xs" variant="ghost">Dismiss</Button>

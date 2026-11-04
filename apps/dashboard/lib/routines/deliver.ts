@@ -13,9 +13,14 @@ import type { RoutineHandler } from "./types";
 
 /** Daily 07:00 — the morning brief is stored in this run's output and shown on Home. */
 export const morningCheck: RoutineHandler = async ({ now }) => {
+  // API mode: refresh the last 7 days from Meta first. Manual mode: uses whatever CSVs were imported.
+  const { pullAllInsights } = await import("@/lib/meta/service");
+  const pulled = await pullAllInsights(now);
+  if (pulled.errors.length) await raiseAlert({ kind: "integration", severity: "warning", title: "Meta insights pull failed for some clients", body: pulled.errors.join("\n"), dedupeKey: `meta_insights:${astDateString(now)}` });
   const r = await runMorningCheck(now);
   const problems = r.brief.filter((b) => b.snapshot.status === "problem").length;
-  return { digest: `Morning check (${r.day}): ${r.brief.length} client(s), ${problems} need attention, ${r.recommendations} recommendation(s) queued`, output: { brief: r.brief, day: r.day } };
+  const src = pulled.mode === "api" ? ` · ${pulled.rows} row(s) pulled from Meta` : "";
+  return { digest: `Morning check (${r.day}): ${r.brief.length} client(s), ${problems} need attention, ${r.recommendations} recommendation(s) queued${src}`, output: { brief: r.brief, day: r.day, pulled } };
 };
 
 /** Mondays 09:00 — last week's report for every active client. */
@@ -120,4 +125,29 @@ export const weeklyReview: RoutineHandler = async ({ now }) => {
     digest: `Week: ${s} sent, ${rate ?? "—"}% replied, ${won[0]?.n ?? 0} new client(s), ${active[0]?.n ?? 0} active, MRR TT$${(rev.mrr / 100).toLocaleString()}, outstanding TT$${(rev.outstanding / 100).toLocaleString()}`,
     output: { pipeline, sent: s, replies: replies[0]?.n ?? 0, replyRate: rate, newClients: won[0]?.n ?? 0, revenue: rev, minutes: minutes[0]?.m ?? 0 },
   };
+};
+
+/** Every 30 min — Gmail replies → recordReply; Meta lead-form leads → lead inbox. Both no-ops while off. */
+export const inboxSync: RoutineHandler = async () => {
+  const parts: string[] = [];
+  const { syncGmailReplies } = await import("@/lib/google");
+  const { recordReply } = await import("@/lib/outreach/sequences");
+  const gmail = await syncGmailReplies((leadId, text) => recordReply(leadId, text, null, { channel: "email" }));
+  if (!gmail.skipped) parts.push(`Gmail: ${gmail.matched} repl${gmail.matched === 1 ? "y" : "ies"} from leads (${gmail.scanned} new emails scanned)`);
+  const { metaMode } = await import("@/lib/meta/client");
+  if ((await metaMode()) === "api") {
+    const { pullMetaLeads } = await import("@/lib/meta/service");
+    const clients = await db.select().from(schema.clients).where(eq(schema.clients.status, "active"));
+    let added = 0;
+    for (const c of clients.filter((c) => c.pageId && !c.isDemo)) {
+      try {
+        added += (await pullMetaLeads(c.id)).added;
+      } catch (e) {
+        await raiseAlert({ kind: "integration", severity: "warning", title: `Meta leads couldn't be pulled for ${c.name}`, body: e instanceof Error ? e.message : String(e), dedupeKey: `meta_leads:${c.id}:${astDateString(new Date())}` });
+      }
+    }
+    parts.push(`Meta: ${added} new lead-form lead(s)`);
+  }
+  if (!parts.length) return { status: "skipped", digest: "Inbox sync: Gmail and the Meta API are off" };
+  return { digest: `Inbox sync — ${parts.join(" · ")}` };
 };

@@ -40,8 +40,18 @@ export async function availableSlots(now = new Date(), days = 14) {
     .select({ startsAt: schema.bookings.startsAt })
     .from(schema.bookings)
     .where(and(eq(schema.bookings.status, "booked"), gte(schema.bookings.startsAt, now), lt(schema.bookings.startsAt, addDays(now, days + 1))));
-  // Google Calendar busy times are added here when the google_calendar flag is on (Phase 3).
-  return computeSlots(settings.availability, taken.map((t) => t.startsAt), now, days);
+  const slots = computeSlots(settings.availability, taken.map((t) => t.startsAt), now, days);
+  // Google Calendar on: also hide anything that clashes with Matthias's own calendar.
+  const { googleReady, busyTimes } = await import("@/lib/google");
+  if (!(await googleReady("google_calendar"))) return slots;
+  try {
+    const { filterBusy } = await import("@/lib/google/mime");
+    return filterBusy(slots, await busyTimes(now, addDays(now, days + 1)), SLOT_MINUTES);
+  } catch (e) {
+    const { raiseAlert } = await import("@/lib/alerts");
+    await raiseAlert({ kind: "integration", severity: "warning", title: "Google Calendar busy times unavailable", body: e instanceof Error ? e.message : String(e), dedupeKey: `gcal_busy:${now.toISOString().slice(0, 13)}` });
+    return slots;
+  }
 }
 
 export type BookingInput = { name: string; businessName: string; phone: string; email?: string | null; notes?: string | null; startsAt: Date };
@@ -83,5 +93,15 @@ export async function createBooking(input: BookingInput, ip: string | null) {
   await db.update(schema.leads).set({ nextAction: "Discovery call", nextActionDue: input.startsAt }).where(eq(schema.leads.id, lead.id));
   await enqueueJob("call_brief", { leadId: lead.id, bookingId: booking.id }, { dedupeKey: `call_brief:${booking.id}` });
   await logAudit({ actorType: "portal", action: "booking.created", entityTable: "bookings", entityId: booking.id, details: { leadId: lead.id }, ip });
+  // Google Calendar on: add the call to Matthias's calendar. A calendar error never loses the booking.
+  const { googleReady, createCalendarEvent } = await import("@/lib/google");
+  if (await googleReady("google_calendar")) {
+    try {
+      await createCalendarEvent(booking.id);
+    } catch (e) {
+      const { raiseAlert } = await import("@/lib/alerts");
+      await raiseAlert({ kind: "integration", severity: "warning", title: "Couldn't add a booked call to Google Calendar", body: e instanceof Error ? e.message : String(e), link: `/dashboard/leads/${lead.id}`, dedupeKey: `gcal_event:${booking.id}` });
+    }
+  }
   return booking;
 }

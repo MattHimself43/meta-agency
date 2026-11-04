@@ -9,7 +9,7 @@ import { createApproval } from "@/lib/approvals";
 import { getSettings } from "@/lib/settings";
 import { astDateString } from "@/lib/time";
 import { InvoicePdf } from "@/lib/pdf/invoice-pdf";
-import { activeProvider } from "@/lib/payments";
+import { activeProvider, issuePayLink } from "@/lib/payments";
 import { draftInvoice } from "./invoices";
 
 export type Invoice = typeof schema.invoices.$inferSelect;
@@ -41,11 +41,8 @@ export async function markInvoiceSent(id: string, actorId: string) {
   if (!inv) throw new Error("Invoice not found");
   if (!inv.number) throw new Error("Approve the invoice first (that gives it its number).");
   let paymentLink = inv.paymentLink;
-  const provider = await activeProvider();
-  if (provider && !paymentLink) {
-    const [client] = await db.select().from(schema.clients).where(eq(schema.clients.id, inv.clientId));
-    paymentLink = (await provider.createPaymentLink({ id: inv.id, number: inv.number, totalCents: inv.totalCents, currency: inv.currency, clientName: client?.name ?? "" })).url;
-  }
+  // WiPay on: the client gets our /pay link (each click starts a fresh hosted checkout).
+  if ((await activeProvider()) && !paymentLink) paymentLink = await issuePayLink(inv.id, actorId);
   await db.update(schema.invoices).set({ status: inv.status === "approved" ? "sent" : inv.status, sentAt: inv.sentAt ?? new Date(), paymentLink }).where(eq(schema.invoices.id, id));
   await logAudit({ actorType: "user", actorId, action: "invoice.sent", entityTable: "invoices", entityId: id });
 }

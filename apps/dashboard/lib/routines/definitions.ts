@@ -101,6 +101,14 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     phase: 2,
     enabledByDefault: true,
   },
+  {
+    key: "inbox_sync",
+    name: "Inbox sync",
+    description: "Every 30 minutes, 7am–9pm: Gmail replies from leads become logged replies (sequence stops, response drafted for approval); new Meta instant-form leads land in each client's lead inbox. Does nothing while Gmail and the Meta API are off.",
+    cron: "*/30 7-21 * * *",
+    phase: 3,
+    enabledByDefault: true,
+  },
 ];
 
 export const ROUTINE_PHASE: Record<string, number> = Object.fromEntries(ROUTINE_DEFINITIONS.map((d) => [d.key, d.phase]));

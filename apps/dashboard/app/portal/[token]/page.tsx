@@ -81,6 +81,7 @@ export default async function PortalHome({ params, searchParams }: { params: Pro
         </Link>
       ) : null}
 
+      {client.status !== "onboarding" ? <LiveResults clientId={client.id} /> : null}
       {reports.length ? (
         <section>
           <p className="kicker mb-2">Your reports</p>
@@ -88,5 +89,29 @@ export default async function PortalHome({ params, searchParams }: { params: Pro
         </section>
       ) : null}
     </PortalShell>
+  );
+}
+
+/** v2 live results: the last 30 days straight from the numbers we report on (CSV or Meta API). */
+async function LiveResults({ clientId }: { clientId: string }) {
+  const { rowsFor } = await import("@/lib/performance/service");
+  const { totals, shiftDay } = await import("@/lib/performance/metrics");
+  const { astDateString } = await import("@/lib/time");
+  const to = shiftDay(astDateString(), -1);
+  const rows = (await rowsFor(clientId, shiftDay(to, -29))).filter((r) => r.date <= to);
+  if (!rows.length) return null;
+  const t = totals(rows);
+  const usd = (c: number | null) => (c == null ? "—" : `US$${(c / 100).toFixed(2)}`);
+  const tiles: [string, string][] = [["Ad spend", usd(t.spend)], ["WhatsApp chats", String(t.chats)], ["Leads", String(t.leads)], ["Cost per result", usd(t.cpr)]];
+  return (
+    <section>
+      <p className="kicker mb-2">Last 30 days · to {to}</p>
+      <div className="grid grid-cols-2 gap-3">
+        {tiles.map(([k, v]) => (
+          <div key={k} className="glass rounded-[18px] p-4"><p className="text-xs text-muted-foreground">{k}</p><p className="mt-1 font-display text-xl font-semibold">{v}</p></div>
+        ))}
+      </div>
+      <p className="mt-2 text-xs text-[#5f6f92]">Ad spend is paid by you to Meta. Numbers update each morning.</p>
+    </section>
   );
 }

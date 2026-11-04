@@ -123,22 +123,46 @@ limits (10 WhatsApp, 20 email by default).
 
 ## Turning on WiPay (after registration)
 
-1. Open a WiPay merchant account for the registered business.
-2. Give your developer the WiPay account number and API key; they add them to the hosting settings and test in
-   sandbox first.
-3. Then **Settings → Feature flags → WiPay payments** on. Invoices get a "Pay online" link and are marked paid
-   automatically. Until then, invoices show your bank details and you press **Mark paid** when money arrives.
+1. Open a WiPay **business** account for the registered business and get it verified.
+2. In WiPay → Developer → Payment API, register the dashboard's web address; you'll see your API key there.
+3. Add the account number and API key in Vercel (`WIPAY_ACCOUNT_NUMBER`, `WIPAY_API_KEY`, `WIPAY_ENVIRONMENT=live`)
+   and redeploy. Before that you can try everything in **sandbox** — no real money, no keys needed.
+4. **Settings → Feature flags → WiPay payments** on. On **Integrations → WiPay** choose who pays the card fee.
+5. From then on, **Mark sent** gives each invoice a private pay link (it's in the WhatsApp text and the PDF). Your
+   client taps it, pays on WiPay's secure page, and the invoice marks itself paid — only after AgencyOS has checked
+   WiPay's security code. Bank transfer stays available on the same page.
 
 ## Turning on the Meta API (after registration)
 
-1. Your developer creates a Meta developer app and you complete **Meta business verification** with the registration
-   documents.
-2. In your agency's Business Manager, create a **System User** and give it access to each client's ad account (you
-   already have partner access from onboarding). Your developer stores its token in **Integrations**.
-3. Then **Settings → Feature flags → Meta Marketing API** on. Campaigns are then built straight in Ads Manager —
-   **always paused**. Going live is a separate **Launch** button that only you can press.
-4. Until then (Manual mode) AgencyOS gives you a numbered Ads Manager checklist, and you upload the Ads Manager CSV
-   export so reports and the morning brief still work.
+1. Your developer creates a Meta developer app; you complete **Meta business verification**.
+2. In your Business Manager create a **System User**, give it access to the clients' ad accounts and Pages (you have
+   partner access from onboarding), generate its token and paste it on **Integrations → Meta**.
+3. **Settings → Feature flags → Meta Marketing API** on.
+4. Per client: **Check access via Meta API** on their page. It finds the Page and pixel and ticks the two checks that
+   are yours (if Meta shows a spending limit).
+5. Approve a plan, press **Build in Meta (PAUSED)**. Everything is created switched off. Have a look in Ads Manager.
+6. Press **Launch** when you're happy — that's the only thing that can switch ads on. Nothing else, not the AI and
+   not a routine, can do it; the server refuses and logs any attempt.
+7. Results now arrive by themselves each morning — no more CSV exports. Instant-form leads appear on the client's
+   **Leads** tab.
+
+## Gmail, Calendar and Higgsfield (optional)
+
+- **Gmail**: once connected, approved emails get a **Send via Gmail** button, and replies from leads are picked up
+  every 30 minutes (the follow-ups stop and a response waits in your queue).
+- **Calendar**: busy times disappear from your booking page, and booked calls land in your calendar.
+- **Higgsfield**: on a client's **Assets** tab pick a photo and press **Generate** for a video or image variant.
+  Always check it still shows the real car or property before using it.
+
+## Small things that save time
+
+- **Time tracker**: log your minutes; the bar shows the week against the 4-hour target.
+- **Billing → Expenses**: add what the agency spends to see real profit for the month.
+- **Winning ads**: mark an ad that beat its target as a winner; find them all under Creative studio → Winning ads.
+- **Cost per sale**: on a client's Performance tab, log the sales they tell you about.
+- **WhatsApp me** on an alert sends it to your own WhatsApp (you press send).
+- **Team seats** (when you hire help): Settings → Team seats → invite their email, then create their login in
+  Supabase. They can work leads, clients and creatives, but can't see money or settings, launch or raise budgets.
 
 ## Backups and exports
 

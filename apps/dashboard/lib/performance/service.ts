@@ -5,7 +5,7 @@ import { logAudit } from "@/lib/audit";
 import { createApproval } from "@/lib/approvals";
 import { raiseAlert } from "@/lib/alerts";
 import { astDateString } from "@/lib/time";
-import { mapAdsManagerCsv } from "./ads-csv";
+import { mapAdsManagerCsv, type PerfRow } from "./ads-csv";
 import { shiftDay, snapshot, type Row, type Snapshot } from "./metrics";
 
 /** Import an Ads Manager CSV (Manual mode). Re-importing the same rows updates them instead of duplicating. */
@@ -14,20 +14,27 @@ export async function importPerformanceCsv(clientId: string, text: string, actor
   if (!client) throw new Error("Client not found");
   const { rows, skipped, missing } = mapAdsManagerCsv(text);
   if (missing.length) throw new Error(`The CSV is missing: ${missing.join(", ")}. In Ads Manager use Breakdown → By time → Day, and include Amount spent.`);
-  let upserted = 0;
-  for (const r of rows) {
-    await db
-      .insert(schema.performanceDaily)
-      .values({ clientId, ...r, frequency: r.frequency?.toFixed(3) ?? null, ctr: r.ctr?.toFixed(4) ?? null, source: "csv", isDemo: client.isDemo })
-      .onConflictDoUpdate({
-        target: [schema.performanceDaily.clientId, schema.performanceDaily.date, schema.performanceDaily.campaignName, schema.performanceDaily.adSetName, schema.performanceDaily.adName],
-        set: { spendUsdCents: r.spendUsdCents, impressions: r.impressions, reach: r.reach, frequency: r.frequency?.toFixed(3) ?? null, clicks: r.clicks, ctr: r.ctr?.toFixed(4) ?? null, leads: r.leads, whatsappConversations: r.whatsappConversations, costPerResultUsdCents: r.costPerResultUsdCents, source: "csv" },
-      });
-    upserted++;
-  }
+  const upserted = await upsertPerformanceRows(clientId, rows, "csv", client.isDemo);
   const dates = rows.map((r) => r.date).sort();
   await logAudit({ actorType: "user", actorId, action: "performance.csv_imported", entityTable: "clients", entityId: clientId, details: { rows: upserted, skipped, from: dates[0], to: dates.at(-1) } });
   return { rows: upserted, skipped, from: dates[0] ?? null, to: dates.at(-1) ?? null };
+}
+
+/** One upsert for CSV imports and API insights: same ad + day updates instead of duplicating. */
+export async function upsertPerformanceRows(clientId: string, rows: PerfRow[], source: "csv" | "api" | "manual", isDemo: boolean) {
+  let upserted = 0;
+  for (const r of rows) {
+    const values = { spendUsdCents: r.spendUsdCents, impressions: r.impressions, reach: r.reach, frequency: r.frequency?.toFixed(3) ?? null, clicks: r.clicks, ctr: r.ctr?.toFixed(4) ?? null, leads: r.leads, whatsappConversations: r.whatsappConversations, costPerResultUsdCents: r.costPerResultUsdCents, source };
+    await db
+      .insert(schema.performanceDaily)
+      .values({ clientId, date: r.date, campaignName: r.campaignName, adSetName: r.adSetName, adName: r.adName, ...values, isDemo })
+      .onConflictDoUpdate({
+        target: [schema.performanceDaily.clientId, schema.performanceDaily.date, schema.performanceDaily.campaignName, schema.performanceDaily.adSetName, schema.performanceDaily.adName],
+        set: values,
+      });
+    upserted++;
+  }
+  return upserted;
 }
 
 export async function rowsFor(clientId: string, fromDay: string): Promise<Row[]> {

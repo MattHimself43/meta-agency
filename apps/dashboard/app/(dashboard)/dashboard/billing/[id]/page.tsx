@@ -4,7 +4,8 @@ import { asc, eq } from "drizzle-orm";
 import { ArrowLeft, Download } from "lucide-react";
 import { db, schema } from "@/lib/db";
 import { requireOwnerPage } from "@/lib/auth";
-import { bankTransferText } from "@/lib/payments";
+import { activeProvider, bankTransferText } from "@/lib/payments";
+import { issuePayLinkAction } from "../../connect-actions";
 import { formatMoney } from "@/lib/money";
 import { formatAst } from "@/lib/time";
 import { waLink } from "@/lib/phone";
@@ -30,6 +31,8 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
   const lines = await db.select().from(schema.invoiceLines).where(eq(schema.invoiceLines.invoiceId, id)).orderBy(asc(schema.invoiceLines.sortOrder));
   const payments = await db.select().from(schema.payments).where(eq(schema.payments.invoiceId, id));
   const bank = await bankTransferText();
+  const wipay = Boolean(await activeProvider());
+  const attempts = await db.select().from(schema.paymentAttempts).where(eq(schema.paymentAttempts.invoiceId, id));
   const msg = inv.number ? `Hi${client?.contactName ? ` ${client.contactName.split(" ")[0]}` : ""}, here's invoice ${inv.number} for ${formatMoney(inv.totalCents, "TTD")}, due ${inv.dueDate}. ${inv.paymentLink ? `Pay online: ${inv.paymentLink}` : bank} Reference: ${inv.number}. Thanks!` : "";
 
   return (
@@ -37,7 +40,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
       <Link href="/dashboard/billing" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-brand-cyan"><ArrowLeft className="h-4 w-4" /> Billing</Link>
       <PageHeader kicker={client?.name} title={inv.number ? `Invoice ${inv.number}` : "Invoice draft"} description={`${inv.kind === "setup" ? "Setup fee" : `Management fee ${inv.periodKey}`} · ${formatMoney(inv.totalCents, "TTD")}${inv.dueDate ? ` · due ${inv.dueDate}` : ""}`} actions={<div className="flex items-center gap-2"><Badge variant={inv.status === "paid" ? "low" : inv.status === "overdue" ? "high" : "muted"}>{inv.status}</Badge><Button asChild size="sm" variant="outline"><a href={`/api/pdf/invoice/${id}`}><Download /> PDF</a></Button></div>} />
       {sp.error ? <Notice tone="error">{sp.error}</Notice> : null}
-      {sp.notice ? <Notice>Saved.</Notice> : null}
+      {sp.notice ? <Notice>{sp.notice === "saved" ? "Saved." : sp.notice}</Notice> : null}
       {!inv.number ? <Notice>Approve this invoice in the <Link href="/dashboard/approvals" className="underline">approval queue</Link> — that gives it the next number.</Notice> : null}
       <div className="grid gap-6 xl:grid-cols-5">
         <Card className="xl:col-span-3">
@@ -59,6 +62,14 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
                 <p className="whitespace-pre-wrap rounded-2xl border border-[var(--line)] p-3 text-sm text-[#c2d1ef]">{msg}</p>
                 <SendActions channel="whatsapp" waHref={client?.whatsapp ? waLink(client.whatsapp, msg) : null} body={msg} />
                 <p className="text-xs text-[#5f6f92]">Attach the PDF in WhatsApp, then mark it sent.</p>
+                {wipay ? (
+                  <div className="space-y-2 rounded-2xl border border-[var(--line)] p-3 text-sm">
+                    <p className="font-medium">Card payment link (WiPay)</p>
+                    {inv.paymentLink ? <p className="break-all text-xs text-muted-foreground">{inv.paymentLink}</p> : <p className="text-xs text-muted-foreground">Created automatically when you mark it sent, or now:</p>}
+                    <form action={issuePayLinkAction}><input type="hidden" name="id" value={id} /><Button size="sm" variant="outline">{inv.paymentLink ? "Replace link" : "Create pay link"}</Button></form>
+                    {attempts.length ? <p className="text-xs text-muted-foreground">{attempts.length} checkout attempt(s): {attempts.map((a) => a.status).join(", ")}</p> : null}
+                  </div>
+                ) : null}
                 {inv.status === "approved" ? <form action={invoiceAction}><input type="hidden" name="id" value={id} /><input type="hidden" name="op" value="sent" /><Button size="sm" variant="secondary">Mark sent</Button></form> : null}
                 <form action={invoiceAction} className="space-y-2 border-t border-[var(--line)] pt-4">
                   <input type="hidden" name="id" value={id} />

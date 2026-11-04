@@ -22,6 +22,12 @@ export const currentActor = cache(async (): Promise<Actor | null> => {
   if (!claims?.sub || claims.aal !== "aal2") return null;
   const [profile] = await db.select().from(schema.profiles).where(eq(schema.profiles.id, claims.sub)).limit(1);
   if (!profile) return null;
+  if (profile.role === "none") {
+    // v2 team seats: a pending invite for this email becomes account-manager access on first 2FA sign-in.
+    const { acceptInvite } = await import("@/lib/team");
+    const role = await acceptInvite(profile.id, profile.email);
+    if (role) return { userId: profile.id, email: profile.email, role, name: profile.fullName };
+  }
   return { userId: profile.id, email: profile.email, role: profile.role, name: profile.fullName };
 });
 

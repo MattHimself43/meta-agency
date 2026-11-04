@@ -17,6 +17,9 @@ import { Field, Input } from "@/components/ui/input";
 import { Notice, PageHeader } from "@/components/page-header";
 import { PlanEditor } from "./plan-editor";
 import { budgetAction, planStatusAction } from "../../deliver-actions";
+import { buildViaApiAction, saveLeadFormAction } from "../../connect-actions";
+import { metaMode } from "@/lib/meta/client";
+import type { MetaIds } from "@/lib/meta/build";
 
 export const metadata = { title: "Campaign plan" };
 
@@ -35,6 +38,9 @@ export default async function CampaignPage({ params, searchParams }: { params: P
     checklistFor(plan),
     getSettings(),
   ]);
+  const mode = await metaMode();
+  const meta = (plan.metaIds ?? {}) as MetaIds;
+  const template = ((await db.select().from(schema.niches).where(eq(schema.niches.id, client?.nicheId ?? "00000000-0000-0000-0000-000000000000")))[0]?.campaignTemplates as { key: string; destination: string }[] | undefined)?.find((t) => t.key === plan.template);
   const special = plan.specialAdCategory as SpecialCategory;
   const isOwner = actor.role === "owner";
   const canLaunch = limitStep?.status === "done";
@@ -50,7 +56,7 @@ export default async function CampaignPage({ params, searchParams }: { params: P
   return (
     <>
       <Link href={`/dashboard/clients/${plan.clientId}?tab=campaigns`} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-brand-cyan"><ArrowLeft className="h-4 w-4" /> {client?.name}</Link>
-      <PageHeader kicker="Campaign plan · Manual mode" title={plan.name} description={`${OBJECTIVE_LABEL[plan.objective] ?? plan.objective} · ${formatUsdWithTtd(plan.budgetUsdCents, settings.exchangeRate)} per ${plan.budgetType === "daily" ? "day" : "campaign"}${plan.launchedAt ? ` · launched ${formatAst(plan.launchedAt, "d MMM")}` : ""}`} actions={<Badge variant={plan.status === "live" ? "low" : plan.status === "draft" ? "muted" : "default"}>{plan.status.replace("_", " ")}</Badge>} />
+      <PageHeader kicker={`Campaign plan · ${mode === "api" ? "Meta API mode" : "Manual mode"}`} title={plan.name} description={`${OBJECTIVE_LABEL[plan.objective] ?? plan.objective} · ${formatUsdWithTtd(plan.budgetUsdCents, settings.exchangeRate)} per ${plan.budgetType === "daily" ? "day" : "campaign"}${plan.launchedAt ? ` · launched ${formatAst(plan.launchedAt, "d MMM")}` : ""}`} actions={<Badge variant={plan.status === "live" ? "low" : plan.status === "draft" ? "muted" : "default"}>{plan.status.replace("_", " ")}</Badge>} />
       {sp.error ? <Notice tone="error">{sp.error}</Notice> : null}
       {sp.notice ? <Notice>{sp.notice === "saved" ? "Saved." : sp.notice}</Notice> : null}
 
@@ -60,7 +66,13 @@ export default async function CampaignPage({ params, searchParams }: { params: P
             {["draft", "approved", "built_paused", "live"].map((s, i) => <li key={s} className={`rounded-full px-3 py-1 ${plan.status === s ? "btn-grad font-semibold" : "btn-ghost-line text-muted-foreground"}`}>{i + 1}. {s === "built_paused" ? "built (paused)" : s}</li>)}
           </ol>
           {plan.status === "draft" && isOwner ? statusOp("approve", "Approve plan") : null}
-          {plan.status === "approved" ? statusOp("built", "Mark built (paused)", "secondary", <Input name="metaCampaignId" placeholder="Meta campaign ID" className="h-9 w-48" />) : null}
+          {plan.status === "approved" && mode === "api" ? (
+            <form action={buildViaApiAction}>
+              <input type="hidden" name="id" value={id} />
+              <Button size="sm">Build in Meta (PAUSED)</Button>
+            </form>
+          ) : null}
+          {plan.status === "approved" ? statusOp("built", mode === "api" ? "Built by hand instead" : "Mark built (paused)", "secondary", <Input name="metaCampaignId" placeholder="Meta campaign ID" className="h-9 w-48" />) : null}
           {(plan.status === "built_paused" || plan.status === "paused") && isOwner ? (
             <form action={planStatusAction}>
               <input type="hidden" name="id" value={id} />
@@ -72,6 +84,30 @@ export default async function CampaignPage({ params, searchParams }: { params: P
           {!canLaunch && plan.status !== "draft" ? <p className="w-full text-xs text-amber-200">Launch is locked until the client&apos;s account spending limit is confirmed (Clients → onboarding).</p> : null}
         </CardContent>
       </Card>
+
+      {mode === "api" ? (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Meta API</CardTitle>
+            <CardDescription>Build creates the campaign, ad sets, creatives and ads in {client?.name}&apos;s ad account, all PAUSED. Only the owner&apos;s Launch switches them on — the server refuses ACTIVE from anywhere else.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {!client?.pageId ? <p className="text-amber-200">Run the Meta access check on the client page first — it finds the Page ID the ads run from.</p> : null}
+            {template?.destination === "ON_AD" ? (
+              <form action={saveLeadFormAction} className="flex flex-wrap items-end gap-2">
+                <input type="hidden" name="id" value={id} />
+                <Field label="Instant form ID" hint="Create the lead form in Meta (Page → Instant forms), paste its ID"><Input name="leadFormId" defaultValue={meta.leadFormId ?? ""} className="w-56" inputMode="numeric" /></Field>
+                <Button size="sm" variant="secondary">Save</Button>
+              </form>
+            ) : null}
+            {meta.campaignId ? (
+              <p>Campaign <code>{meta.campaignId}</code> · {meta.adSetIds?.length ?? 0} ad set(s) · {meta.adIds?.length ?? 0} ad(s){meta.builtAt ? ` · built ${formatAst(new Date(meta.builtAt))}` : ""}{meta.apiVersion ? ` · ${meta.apiVersion}` : ""}</p>
+            ) : null}
+            {meta.warnings?.length ? <ul className="list-disc space-y-1 pl-5 text-amber-200">{meta.warnings.map((w) => <li key={w}>{w}</li>)}</ul> : null}
+            {meta.lastError ? <p className="text-red-300">Last build error: {meta.lastError} — fix it and press Build again; anything already created is reused, not duplicated.</p> : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {special ? (
         <Notice tone="error">

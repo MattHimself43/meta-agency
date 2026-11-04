@@ -12,6 +12,8 @@ export function registerJobHandlers() {
   if (registered) return;
   registered = true;
 
+  jobHandlers.creative_generation_poll = async (job) => (await import("@/lib/creatives/generate")).pollGeneration(String(job.payload.generationId));
+
   jobHandlers.draft_opener = async (job) => draftOpener(String(job.payload.leadId), "routine:outreach_batch");
 
   jobHandlers.draft_followup = async (job) => {
