@@ -1,5 +1,55 @@
 # Changelog
 
+## Phase 2 — Deliver (2026-11-04)
+
+**Client portal** (`/portal/<token>`, phone-first, no login)
+- Private link per client (32-byte token, stored hashed, rate-limited; rotate it from the client page — the old link
+  stops working at once).
+- Four steps with a progress bar: **agreement** (agreement text from Settings + package, typed name + finger-drawn
+  signature, time and IP stored, signed PDF saved, setup-fee invoice drafted), **intake** (questions come from the
+  client's niche), **uploads** (photos, video, logo, brand colours; direct-to-storage, thumbnails), **Meta access**
+  (screen-by-screen partner-access walkthrough, ad account ID check, "card added" confirmation).
+- Client can approve or ask for changes on creatives sent for review, and read approved reports.
+- When the client's four steps and the owner's two checks (access verified, spending limit set) are done, the client
+  goes **active** and an AI kickoff plan lands in the approval queue (once).
+
+**Creative studio**
+- Ad copy drafted from intake answers (AI or template), editable; every save re-runs the **honesty check**: prices,
+  deposits, percentages and "in stock" claims must appear in the client's intake answers. Failing copy can't go to the
+  client or live without an owner override (logged with a reason).
+- Statuses draft → internal review → client review → approved → live → retired; fatigue flags (frequency over 3, or CTR
+  30% under its first week).
+
+**Campaigns (manual mode)**
+- Plan editor: niche templates, audiences, T&T locations, placements, budget, ads from the studio.
+- Special ad categories (housing, credit) detected and **enforced** (age 18–65+, all genders, radius ≥ 15 miles) with
+  an owner confirmation before approval.
+- Numbered **Ads Manager checklist** generated from the plan, printable, always ending with the campaign switched OFF.
+- Draft → approved (owner) → built (paused, IDs pasted) → live (owner, only after the spending-limit step) → paused.
+- Budget guardrails: raises over 20% in 7 days or above the owner limit go to the approval queue.
+
+**Performance, reports, billing**
+- Ads Manager CSV import (header aliases, any date format Meta exports), upserted per ad per day.
+- **Morning account check** (daily 06:30): flags vs target cost per result, fatigue, recommendations (pause ad, shift
+  budget, new creative, raise/lower budget) queued as approvals; Home shows the **morning brief**.
+- **Weekly reports** (Mondays): numbers + AI or template narrative, branded PDF, approve → share link for the client.
+- **Billing**: 1st-of-month run drafts one invoice per active client (idempotent — reruns never duplicate), sequential
+  numbers on approval, PDF, bank-transfer instructions, mark sent/paid, overdue chaser at 3/10/21 days (WhatsApp text
+  prepared, never sent). Revenue, MRR and margin on Analytics. WiPay stays behind its flag (Phase 3).
+- New routines: morning check, weekly reports, month-end close, onboarding chaser, invoice chaser, creative refresh,
+  weekly review.
+
+**Storage**
+- Supabase Storage (private bucket `agencyos`, signed uploads up to 200 MB; the Supabase free plan caps files at 50 MB) when `SUPABASE_SERVICE_ROLE_KEY` is set;
+  otherwise files up to 4 MB are kept in the database so everything still works.
+
+**Migration** `0003_phase2_deliver.sql` — intake/brand fields on clients, launch fields on plans, invoice reminders,
+`budget_changes`, `stored_files`; RLS on both new tables.
+
+**Tests** — 88 (24 new unit tests + 7 database acceptance tests: portal steps → active + kickoff, plan → checklist,
+CSV → morning brief + report PDF, monthly run with no duplicates on rerun). Portal walked end to end on an emulated
+iPhone 13 with touch signature.
+
 ## Phase 1 — Sell (2026-11-04)
 
 **AI layer** (`lib/ai/`)

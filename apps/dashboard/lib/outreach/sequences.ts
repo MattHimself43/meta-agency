@@ -412,6 +412,16 @@ export async function todaysSends(now = new Date()) {
     .orderBy(asc(schema.messages.dueAt));
 }
 
+/** Approved messages to existing clients (invoice reminders, onboarding nudges) due today. */
+export async function todaysClientSends(now = new Date()) {
+  return db
+    .select({ message: schema.messages, client: schema.clients })
+    .from(schema.messages)
+    .innerJoin(schema.clients, eq(schema.clients.id, schema.messages.clientId))
+    .where(and(eq(schema.messages.status, "approved"), lte(schema.messages.dueAt, endOfAstDay(now))))
+    .orderBy(asc(schema.messages.dueAt));
+}
+
 /** Drafts (follow-ups) whose day has come but whose text hasn't been written yet. */
 export async function dueUnwrittenFollowups(now = new Date()) {
   return db

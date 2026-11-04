@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
-import { todaysSends, sentToday } from "@/lib/outreach/sequences";
+import { todaysClientSends, todaysSends, sentToday } from "@/lib/outreach/sequences";
 import { getSettings } from "@/lib/settings";
 import { waLink } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { SendActions } from "@/components/sell/send-actions";
 import { markSentAction } from "@/app/(dashboard)/dashboard/sell-actions";
 
-const PURPOSE: Record<string, string> = { outreach_opener: "Opener", followup_day3: "Day 3", followup_day7: "Day 7", reply_draft: "Reply" };
+const PURPOSE: Record<string, string> = { outreach_opener: "Opener", followup_day3: "Day 3", followup_day7: "Day 7", reply_draft: "Reply", invoice_reminder: "Invoice reminder", onboarding_nudge: "Onboarding nudge" };
 
 /** Approved messages due today, each with Open in WhatsApp (or email / DM) and Mark sent. */
 export async function TodaySends({ back, limit }: { back: string; limit?: number }) {
-  const [rows, settings, wa, email, dm] = await Promise.all([todaysSends(), getSettings(), sentToday("whatsapp"), sentToday("email"), sentToday("dm")]);
+  const [rows, clientRows, settings, wa, email, dm] = await Promise.all([todaysSends(), todaysClientSends(), getSettings(), sentToday("whatsapp"), sentToday("email"), sentToday("dm")]);
   const counts = { whatsapp: wa, email, dm };
   const shown = limit ? rows.slice(0, limit) : rows;
   return (
@@ -24,9 +24,30 @@ export async function TodaySends({ back, limit }: { back: string; limit?: number
           </Badge>
         ))}
       </div>
-      {shown.length === 0 ? (
+      {clientRows.length ? (
+        <ul className="mb-3 divide-y divide-[var(--line)] rounded-2xl border border-[var(--line)] px-3">
+          {clientRows.map(({ message: m, client }) => (
+            <li key={m.id} className="py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={`/dashboard/clients/${client.id}`} className="font-display text-[15px] font-semibold hover:text-brand-cyan">{client.name}</Link>
+                <Badge variant="medium">{PURPOSE[m.purpose] ?? m.purpose}</Badge>
+              </div>
+              <p className="mt-1.5 whitespace-pre-wrap text-sm text-[#c2d1ef]">{m.body}</p>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <SendActions channel="whatsapp" waHref={client.whatsapp ? waLink(client.whatsapp, m.body ?? "") : null} body={m.body ?? ""} />
+                <form action={markSentAction}>
+                  <input type="hidden" name="id" value={m.id} />
+                  <input type="hidden" name="back" value={back} />
+                  <Button size="sm" variant="secondary"><Check /> Mark sent</Button>
+                </form>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {shown.length === 0 && !clientRows.length ? (
         <p className="py-4 text-center text-sm text-muted-foreground">Nothing approved to send right now. <Link href="/dashboard/approvals" className="text-brand-cyan hover:underline">Check the approval queue</Link>.</p>
-      ) : (
+      ) : shown.length === 0 ? null : (
         <ul className="divide-y divide-[var(--line)]">
           {shown.map(({ message: m, lead }) => (
             <li key={m.id} className="py-3.5">

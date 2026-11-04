@@ -140,8 +140,22 @@ All AI calls go through `lib/ai/client.ts` → `runPrompt(prompt, input, purpose
 | `/book` | 20-minute call booking | rate limit (5/hour/IP), honeypot, slot re-validated server-side, unique slot index |
 | `/share/audit/<token>`, `/share/proposal/<token>` (+ `/pdf`) | approved documents | 32-byte token stored hashed, rate limit (60/10 min/IP), only `approved` docs |
 | `/api/cron/dispatch` | scheduler | `CRON_SECRET` |
+| `/portal/<token>` | client onboarding portal | 32-byte token stored hashed, rate limit, files scoped to that client |
+| `/share/report/<token>` (+ `/pdf`) | approved weekly reports | same as other share links |
 
 Wire the landing page's "Book a call" buttons to `https://app.<domain>/book` when you're ready (not changed yet).
+
+### File storage (Phase 2)
+
+Portal uploads, signatures and signed PDFs go through `lib/storage.ts`:
+
+- **With `SUPABASE_SERVICE_ROLE_KEY`** (recommended): create a **private** bucket named `agencyos` in Supabase →
+  Storage (or set `STORAGE_BUCKET`). Browsers upload straight to Storage with signed URLs (app limit 200 MB per file; the Supabase free plan caps files at 50 MB).
+- **Without it**: files up to 4 MB are stored in the `stored_files` table. Fine for testing; add the key before
+  clients upload videos.
+
+`AGENCY_META_BUSINESS_ID` (optional) is shown to clients in the Meta-access step so they know which business to add as
+a partner.
 
 ### Feature flags
 

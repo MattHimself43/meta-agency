@@ -29,7 +29,7 @@ const db = drizzle(client, { schema });
 
 // Tables with is_demo, in delete order (children first).
 const DEMO_TABLES = [
-  "approvals", "payments", "invoice_lines", "invoices", "expenses", "reports", "recommendations", "performance_daily",
+  "approvals", "payments", "invoice_lines", "invoices", "expenses", "reports", "recommendations", "performance_daily", "budget_changes",
   "creatives", "campaign_plans", "assets", "agreements", "onboarding_steps", "messages", "audits", "call_briefs",
   "proposals", "bookings", "activities", "clients", "leads",
 ];
@@ -212,6 +212,47 @@ async function demo(nicheIds: Record<string, string>) {
         isDemo: true,
       })
       .onConflictDoNothing();
+  }
+
+  // Phase 2 demo: the active client has intake answers, a live campaign plan and creatives.
+  const intake = {
+    stock_list: "https://example.com/demo-stock (fictional)",
+    price_range: "TT$85,000 – TT$190,000",
+    financing_partners: "Demo Credit Union — 7.5% over 72 months (fictional)",
+    deposit_offers: "$20k down, drive today on selected units",
+    best_sellers: "Nissan Tiida, Toyota Aqua, Honda Fit",
+    locations: "Demo Main Road, Princes Town (fictional)",
+    opening_hours: "Mon–Sat 8am–5pm",
+    lead_whatsapp: "+18685550121",
+  };
+  await db.update(schema.clients).set({ intake, brandColours: ["#2E6BFF", "#FFFFFF"], pageUrl: "https://facebook.com/demo-princes-town-auto-hub" }).where(eq(schema.clients.id, active.id));
+  const [existingPlan] = await db.select().from(schema.campaignPlans).where(eq(schema.campaignPlans.clientId, active.id));
+  if (!existingPlan) {
+    const ad = { creativeId: null, name: "Demo — $20k down Tiida", format: "4:5", primaryText: "$20k down, drive today on selected units. Nissan Tiida in stock in Princes Town — WhatsApp us for photos and price.", headline: "Drive today", cta: "Send WhatsApp message", mediaNote: "Tiida on the lot" };
+    await db.insert(schema.campaignPlans).values({
+      clientId: active.id,
+      name: "Demo — Click-to-WhatsApp",
+      template: "ctwa",
+      objective: "OUTCOME_ENGAGEMENT",
+      audiences: [{ name: "T&T broad", type: "broad", ageMin: 18, ageMax: 65, genders: "all", interests: [], notes: "Broad audience" }],
+      locations: [{ name: "Trinidad and Tobago (whole country)", radiusKm: null }],
+      placements: { mode: "advantage", list: [] },
+      budgetType: "daily",
+      budgetUsdCents: 2500,
+      schedule: { start: "2026-09-01", end: null },
+      specialAdCategory: "FINANCIAL_PRODUCTS_SERVICES",
+      specialAdCategoryConfirmed: true,
+      ads: [ad],
+      status: "live",
+      launchedAt: daysAgo(60),
+      isDemo: true,
+    });
+    const ok = { ok: true, checked: 2, mismatches: [], checkedAt: new Date().toISOString() };
+    await db.insert(schema.creatives).values([
+      { clientId: active.id, format: "4:5", hook: "$20k down, drive today", primaryText: "$20k down, drive today on selected units. Nissan Tiida, Toyota Aqua and Honda Fit on the lot. WhatsApp us for today's stock.", headline: "Drive today", cta: "Send WhatsApp message", status: "live", honestyCheck: ok, isDemo: true },
+      { clientId: active.id, format: "9:16", hook: "Toyota Aqua in stock", primaryText: "Toyota Aqua available now in Princes Town. WhatsApp us for photos, price and a test drive.", headline: "In stock now", cta: "Send WhatsApp message", status: "client_review", honestyCheck: { ...ok, checked: 0 }, isDemo: true },
+      { clientId: active.id, format: "1:1", hook: "$15k down this weekend!", primaryText: "Weekend special: $15k down on any Tiida.", headline: "Weekend deal", cta: "Send WhatsApp message", status: "draft", honestyCheck: { ok: false, checked: 1, mismatches: [{ claim: "$15k", reason: "“$15k” isn't in the client's intake answers" }], checkedAt: new Date().toISOString() }, isDemo: true },
+    ]);
   }
 
   // Two demo approvals so the queue isn't empty on first sign-in.

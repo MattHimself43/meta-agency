@@ -8,7 +8,8 @@ import { formatAst } from "@/lib/time";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ApprovalList } from "@/components/approvals/approval-list";
-import { ComingSoon, PageHeader } from "@/components/page-header";
+import { PageHeader } from "@/components/page-header";
+import { MorningBrief } from "@/components/deliver/morning-brief";
 import { approveAllLowRiskAction, resolveAlertAction } from "./actions";
 import { TodaySends } from "@/components/sell/today-sends";
 import { Flash } from "@/components/sell/flash";
@@ -115,7 +116,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
               <CardDescription>Yesterday&apos;s spend, leads and cost per lead vs target, per client.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ComingSoon phase="Phase 2">Built from the 07:00 morning account check.</ComingSoon>
+              <MorningBrief />
             </CardContent>
           </Card>
           <Card>

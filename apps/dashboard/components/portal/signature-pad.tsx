@@ -9,6 +9,7 @@ export function SignaturePad({ name }: { name: string }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const drawing = useRef(false);
+  const dirty = useRef(false);
   const [empty, setEmpty] = useState(true);
 
   useEffect(() => {
@@ -25,7 +26,15 @@ export function SignaturePad({ name }: { name: string }) {
     ctx.strokeStyle = "#0b1430";
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, rect.width, rect.height);
-  }, []);
+    // Belt and braces: whatever happened with pointer events, put the drawing into the submitted form.
+    const form = input.current?.form;
+    const onData = (e: FormDataEvent) => {
+      if (!dirty.current) return;
+      e.formData.set(name, c.toDataURL("image/png"));
+    };
+    form?.addEventListener("formdata", onData);
+    return () => form?.removeEventListener("formdata", onData);
+  }, [name]);
 
   const pos = (e: React.PointerEvent) => {
     const r = canvas.current!.getBoundingClientRect();
@@ -55,11 +64,19 @@ export function SignaturePad({ name }: { name: string }) {
           const ctx = canvas.current!.getContext("2d")!;
           ctx.lineTo(p.x, p.y);
           ctx.stroke();
-          setEmpty(false);
+          if (!dirty.current) setEmpty(false);
+          dirty.current = true;
         }}
         onPointerUp={() => {
           drawing.current = false;
           save();
+        }}
+        onPointerCancel={() => {
+          drawing.current = false;
+          save();
+        }}
+        onPointerLeave={() => {
+          if (drawing.current) save();
         }}
       />
       <input ref={input} type="hidden" name={name} />
@@ -76,6 +93,7 @@ export function SignaturePad({ name }: { name: string }) {
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, r.width, r.height);
             if (input.current) input.current.value = "";
+            dirty.current = false;
             setEmpty(true);
           }}
         >
