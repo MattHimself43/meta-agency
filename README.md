@@ -118,6 +118,31 @@ approval queue and a row in its run log. Turn it off in Routines once you're hap
 4. Set up the cron (above).
 5. Use preview deployments for branches; only merge to the production branch when a phase is accepted.
 
+### AI (Claude)
+
+All AI calls go through `lib/ai/client.ts` → `runPrompt(prompt, input, purpose)`:
+
+- Prompts live in `lib/ai/prompts/*.v1.ts`, each with a Zod output schema. Change a prompt → bump its version.
+- `AI_MODEL_FAST` (default `claude-sonnet-5-5`) writes messages and does research; `AI_MODEL_DEEP` (default
+  `claude-opus-5-5`) writes audits, call briefs and proposals.
+- Structured outputs (`output_config.format`) guarantee the shape; lead research, ad checks, audits and call briefs use
+  Anthropic's server-side web search (capped per prompt).
+- **Refusal fallback is on**: requests use the `server-side-fallback-2026-07-01` beta with `fallbacks: "default"`, so a
+  request a model declines is retried on a suitable model in the same call. Remove those two fields in
+  `lib/ai/client.ts` to turn it off.
+- Every call writes an `ai_usage` row (prompt version, model, input snapshot, output, tokens, estimated cost).
+- Without `ANTHROPIC_API_KEY` the app still works: template drafts, document skeletons, research disabled.
+
+### Public routes
+
+| Route | What | Protection |
+| --- | --- | --- |
+| `/book` | 20-minute call booking | rate limit (5/hour/IP), honeypot, slot re-validated server-side, unique slot index |
+| `/share/audit/<token>`, `/share/proposal/<token>` (+ `/pdf`) | approved documents | 32-byte token stored hashed, rate limit (60/10 min/IP), only `approved` docs |
+| `/api/cron/dispatch` | scheduler | `CRON_SECRET` |
+
+Wire the landing page's "Book a call" buttons to `https://app.<domain>/book` when you're ready (not changed yet).
+
 ### Feature flags
 
 Settings → Feature flags (owner only). Everything works with every flag off.
@@ -142,7 +167,8 @@ is idempotent and never overwrites a routine schedule you changed.
 
 ```bash
 npm test                                     # unit tests (no DB needed; DB test is skipped)
-TEST_DATABASE_URL=postgres://… npm test      # + Phase 0 acceptance test against a migrated, seeded DB
+TEST_DATABASE_URL=postgres://… npm test      # + Phase 0/1 acceptance tests against a migrated, seeded DB
+                                             #   (use a throwaway DB: the tests create and delete rows)
 BASE_URL=http://localhost:3000 npm run test:e2e   # Playwright smoke tests against a running app
 ```
 

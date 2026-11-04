@@ -10,12 +10,16 @@ import { Button } from "@/components/ui/button";
 import { ApprovalList } from "@/components/approvals/approval-list";
 import { ComingSoon, PageHeader } from "@/components/page-header";
 import { approveAllLowRiskAction, resolveAlertAction } from "./actions";
+import { TodaySends } from "@/components/sell/today-sends";
+import { Flash } from "@/components/sell/flash";
+import { todaysCalls } from "@/lib/queries/home";
 
 export const metadata = { title: "Home" };
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<{ notice?: string; error?: string }> }) {
   const actor = await requireStaffPage();
-  const [kpis, approvals, alerts, settings] = await Promise.all([getKpis(), getPendingApprovals(), getOpenAlerts(), getSettings()]);
+  const sp = await searchParams;
+  const [kpis, approvals, alerts, settings, calls] = await Promise.all([getKpis(), getPendingApprovals(), getOpenAlerts(), getSettings(), todaysCalls()]);
   const lowRisk = approvals.filter((a) => a.riskLevel === "low").length;
 
   const tiles = [
@@ -32,6 +36,7 @@ export default async function HomePage() {
     <>
       <PageHeader kicker={formatAst(new Date(), "EEEE d MMMM")} title={`Morning, ${settings.ownerName}`} description={`${approvals.length} item${approvals.length === 1 ? "" : "s"} waiting for you. Nothing goes out until you approve it.`} />
 
+      <Flash notice={sp.notice} error={sp.error} />
       <section aria-label="Key numbers" className="-mx-4 mb-6 flex snap-x gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:grid sm:grid-cols-4 sm:px-0 xl:grid-cols-7">
         {tiles.map((t) => (
           <div key={t.label} className="glass min-w-[9.5rem] snap-start rounded-[18px] p-4">
@@ -95,13 +100,13 @@ export default async function HomePage() {
         </Card>
 
         <div className="space-y-6 lg:col-span-2">
-          <Card>
+          <Card className="glass-strong">
             <CardHeader>
               <CardTitle>Today&apos;s WhatsApp sends</CardTitle>
               <CardDescription>Openers and due follow-ups, each with Open in WhatsApp and Mark sent.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ComingSoon phase="Phase 1">Arrives with Leads &amp; Outreach.</ComingSoon>
+              <TodaySends back="/dashboard" limit={6} />
             </CardContent>
           </Card>
           <Card>
@@ -118,7 +123,21 @@ export default async function HomePage() {
               <CardTitle>Today&apos;s calls</CardTitle>
             </CardHeader>
             <CardContent>
-              <ComingSoon phase="Phase 1">Calls from /book and the CRM, each with its call brief.</ComingSoon>
+              {calls.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No calls today. Share <span className="font-mono text-xs">{process.env.APP_URL ?? ""}/book</span> to get some.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {calls.map((c) => (
+                    <li key={c.id} className="flex items-start gap-3">
+                      <span className="btn-grad shrink-0 rounded-full px-3 py-1 text-xs font-semibold">{formatAst(c.startsAt, "h:mm a")}</span>
+                      <div className="min-w-0">
+                        {c.leadId ? <Link href={`/dashboard/leads/${c.leadId}`} className="text-sm font-medium hover:text-brand-cyan">{c.businessName ?? c.name}</Link> : <p className="text-sm font-medium">{c.businessName ?? c.name}</p>}
+                        <p className="text-xs text-[#5f6f92]">{c.name}{c.callBriefId && c.leadId ? <> · <Link href={`/dashboard/leads/${c.leadId}/docs/call_brief/${c.callBriefId}`} className="text-brand-cyan hover:underline">call brief</Link></> : " · brief being written"}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </div>

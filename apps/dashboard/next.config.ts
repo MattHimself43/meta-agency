@@ -10,7 +10,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["postgres"],
+  serverExternalPackages: ["postgres", "@react-pdf/renderer"],
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
   },

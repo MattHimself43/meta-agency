@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Check, Pencil, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,9 @@ export function ApprovalList({ items, role, empty = "Nothing waiting. Nice." }: 
       {items.map((a) => {
         const label = isApprovalType(a.itemType) ? APPROVAL_TYPES[a.itemType].label : a.itemType;
         const body = typeof a.preview?.body === "string" ? a.preview.body : null;
+        const variants = Array.isArray(a.preview?.variants) ? (a.preview.variants as string[]).filter((v) => v && v !== body) : [];
+        const missing = Array.isArray(a.preview?.missing_facts) ? (a.preview.missing_facts as string[]) : [];
+        const leadId = typeof a.preview?.leadId === "string" ? a.preview.leadId : null;
         const allowed = a.status === "pending" && roleCanApprove(role, a.itemType, a.riskLevel as Risk);
         return (
           <li key={a.id} className="py-4 first:pt-1">
@@ -23,9 +27,24 @@ export function ApprovalList({ items, role, empty = "Nothing waiting. Nice." }: 
               {a.status !== "pending" ? <Badge variant="outline">{a.status.replace("_", " ")}</Badge> : null}
               <span className="ml-auto text-xs text-[#5f6f92]">{formatAst(a.createdAt)}</span>
             </div>
-            <p className="mt-2 font-display text-[15px] font-semibold tracking-tight">{a.title}</p>
+            <p className="mt-2 font-display text-[15px] font-semibold tracking-tight">
+              {leadId ? <Link href={`/dashboard/leads/${leadId}`} className="hover:text-brand-cyan">{a.title}</Link> : a.title}
+            </p>
             {a.summary ? <p className="text-sm text-muted-foreground">{a.summary}</p> : null}
             {body ? <blockquote className="mt-2.5 whitespace-pre-wrap rounded-2xl border border-[var(--line)] border-l-2 border-l-brand-cyan bg-[rgba(8,16,31,0.55)] p-3.5 text-sm leading-relaxed text-[#c2d1ef] shadow-[inset_8px_0_24px_-20px_rgba(95,227,255,0.8)]">{body}</blockquote> : null}
+            {missing.length ? <p className="mt-1.5 text-xs text-amber-200/90">Missing: {missing.join(" · ")}</p> : null}
+            {variants.length && a.status === "pending" && allowed ? (
+              <div className="mt-2 space-y-2">
+                {variants.map((v, i) => (
+                  <form key={i} action={editApprovalAction} className="flex items-start gap-2 rounded-2xl border border-dashed border-[var(--line)] p-3">
+                    <input type="hidden" name="id" value={a.id} />
+                    <input type="hidden" name="body" value={v} />
+                    <p className="flex-1 whitespace-pre-wrap text-sm text-muted-foreground">{v}</p>
+                    <Button size="xs" variant="outline" type="submit">Use this</Button>
+                  </form>
+                ))}
+              </div>
+            ) : null}
             {a.decisionNote && a.status !== "pending" ? <p className="mt-1 text-xs text-muted-foreground">Note: {a.decisionNote}</p> : null}
 
             {allowed ? (

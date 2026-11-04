@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, sql } from "drizzle-orm";
 import { format, startOfMonth, startOfWeek } from "date-fns";
 import { db, schema } from "@/lib/db";
 import { astToUtc, utcToAst } from "@/lib/time";
@@ -27,7 +27,8 @@ export async function getKpis() {
       .innerJoin(schema.packages, eq(schema.packages.id, schema.clients.packageId))
       .where(eq(schema.clients.status, "active")),
     db
-      .select({ cents: sql<number>`coalesce(sum(${schema.leads.estimatedValueCents}),0)::bigint` })
+      // Leads without an estimate count at the recommended package's monthly fee.
+      .select({ cents: sql<number>`coalesce(sum(coalesce(${schema.leads.estimatedValueCents}, (select monthly_fee_cents from packages where recommended and active order by sort_order limit 1), 0)),0)::bigint` })
       .from(schema.leads)
       .where(inArray(schema.leads.stage, ["contacted", "replied", "call_booked", "proposal_sent"])),
     db.select({ n: count }).from(schema.activities).where(and(eq(schema.activities.type, "message_sent"), gte(schema.activities.occurredAt, weekStart))),
@@ -62,4 +63,14 @@ export async function getPendingApprovals(limit = 50) {
 
 export async function getOpenAlerts() {
   return db.select().from(schema.alerts).where(isNull(schema.alerts.resolvedAt)).orderBy(desc(schema.alerts.createdAt)).limit(20);
+}
+
+/** Today's booked calls (AST day). Google Calendar events join this list when that integration is on. */
+export async function todaysCalls(now = new Date()) {
+  const day = format(utcToAst(now), "yyyy-MM-dd");
+  return db
+    .select()
+    .from(schema.bookings)
+    .where(and(eq(schema.bookings.status, "booked"), gte(schema.bookings.startsAt, astToUtc(`${day}T00:00:00`)), lte(schema.bookings.startsAt, astToUtc(`${day}T23:59:59`))))
+    .orderBy(asc(schema.bookings.startsAt));
 }

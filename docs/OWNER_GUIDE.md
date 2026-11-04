@@ -22,8 +22,27 @@ Best done after the 07:15 digest email lands.
    - **Edit** if a word is off (your edit is saved and logged),
    - **Approve** or **Reject**.
    Low-risk items (like day-3 follow-ups) can go together with **Approve all low risk**.
-3. **Today's WhatsApp sends** (5 min, from Phase 1). Tap **Open in WhatsApp** — the message opens on your phone, ready.
+3. **Today's WhatsApp sends** (5 min). Tap **Open in WhatsApp** — the message opens on your phone, ready.
    Press send yourself, then tap **Mark sent**. AgencyOS never sends WhatsApp for you; that protects your number.
+   Marking sent schedules the next message (day 3, then day 7). Daily limits (10 WhatsApp by default) stop you
+   over-sending.
+4. **Replies** (as they come). Open the lead (or Outreach → Replies), paste what they said, press **Log reply**.
+   The follow-ups stop, the reply is labelled (interested, question, not now, no, stop) and a response waits in your
+   queue. "Stop" puts them on the do-not-contact list for good.
+
+## Finding and working leads
+
+- **Leads**: every prospect with a fit score out of 10 (tap a lead to see why). Filter by niche, area, stage or
+  score and save the filter as a view. Add leads by hand, **Import CSV**, or **Research new leads** (needs the AI key).
+- Every weekday at 8:00 the **outreach batch** picks your 10 best uncontacted leads and drafts two versions of a first
+  message for each. Pick a version with **Use this**, edit if needed, approve.
+- **Pipeline**: drag leads between stages (on your phone use the menu on each card). Moving to **Won** creates the client
+  and their setup invoice draft and shows the client portal link once — copy it.
+- Before a call: open the lead → **Write call brief** (one page: their stock, ads, competitors, objections, package to
+  suggest). Calls booked through your booking page get a brief automatically.
+- After a call: **Write a proposal** — paste your notes, check it, then **Approve & create share link** and send the
+  link on WhatsApp. Prices always come from your packages. **Generate audit** works the same way for a free ads audit.
+- Your booking link is `app.yourdomain.com/book` — put it in your WhatsApp replies and on the website.
 
 Everything works on your phone. The bottom bar has Home, Approve, Routines and Settings.
 

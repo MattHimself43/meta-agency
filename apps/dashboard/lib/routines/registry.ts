@@ -6,6 +6,12 @@ import { getSettings } from "@/lib/settings";
 import { sendSystemEmail, escapeHtml } from "@/lib/email";
 import { formatAst } from "@/lib/time";
 import { ROUTINE_PHASE } from "./definitions";
+import { processJobs, enqueueJob } from "@/lib/jobs";
+import { registerJobHandlers } from "@/lib/job-handlers";
+import { planOutreachBatch } from "@/lib/outreach/batch";
+import { rescoreLeads } from "@/lib/leads/service";
+import { TT_AREAS } from "@/lib/leads/research";
+import { aiAvailable } from "@/lib/ai/client";
 import type { RoutineHandler } from "./types";
 
 const notBuilt =
@@ -60,8 +66,43 @@ export const routineHandlers: Record<string, RoutineHandler> = {
   },
 
   morning_check: notBuilt("morning_check"),
-  outreach_batch: notBuilt("outreach_batch"),
-  lead_refresh: notBuilt("lead_refresh"),
+  /** Mon-Fri 08:00: openers for the top-scored uncontacted leads + follow-ups due today. */
+  outreach_batch: async ({ run, now, deadline }) => {
+    registerJobHandlers();
+    const plan = await planOutreachBatch(now, run.id);
+    // Draft as many as fit in this call; the dispatcher drains the rest every 15 minutes.
+    const jobs = await processJobs(deadline - 10_000);
+    return {
+      digest: `Outreach: ${plan.openers} opener(s) and ${plan.followups} follow-up(s) queued for drafting${aiAvailable() ? "" : " (template drafts — AI not configured)"}`,
+      output: { ...plan, jobs },
+    };
+  },
+
+  /** Mondays 06:00: research ~25 new leads, rescore everyone, recheck who started ads. */
+  lead_refresh: async ({ run, now }) => {
+    registerJobHandlers();
+    const rescored = await rescoreLeads();
+    if (!aiAvailable()) return { status: "skipped", digest: `Rescored ${rescored} lead(s). Research skipped: AI not configured`, output: { rescored } };
+    const week = Math.floor(now.getTime() / (7 * 86400_000));
+    const niches = await db.select().from(schema.niches).where(eq(schema.niches.active, true));
+    let research = 0;
+    // ~25 leads: 5 jobs of 5, spread over niches (car dealers first) and a rotating set of areas.
+    const dealers = niches.find((n) => n.slug === "car_dealers") ?? niches[0];
+    const realEstate = niches.find((n) => n.slug === "real_estate") ?? dealers;
+    for (let i = 0; i < 5; i++) {
+      const niche = i < 3 ? dealers : realEstate;
+      if (!niche) break;
+      const area = TT_AREAS[(week * 5 + i) % TT_AREAS.length]!;
+      if (await enqueueJob("lead_research", { nicheId: niche.id, area, count: 5 }, { dedupeKey: `lead_research:${run.scheduledFor?.toISOString() ?? run.id}:${i}`, routineRunId: run.id })) research++;
+    }
+    const noAds = await db
+      .select({ id: schema.leads.id })
+      .from(schema.leads)
+      .where(sql`${schema.leads.runsMetaAds} is not true and ${schema.leads.stage} not in ('won','lost') and ${schema.leads.doNotContact} = false`)
+      .limit(10);
+    for (const l of noAds) await enqueueJob("ad_check", { leadId: l.id }, { dedupeKey: `ad_check:${l.id}:${astWeek(now)}`, routineRunId: run.id });
+    return { digest: `Lead refresh: ${research} research job(s), ${noAds.length} ad check(s) queued, ${rescored} rescored`, output: { research, adChecks: noAds.length, rescored } };
+  },
   weekly_reports: notBuilt("weekly_reports"),
   creative_refresh: notBuilt("creative_refresh"),
   month_end_close: notBuilt("month_end_close"),
@@ -73,5 +114,9 @@ export const routineHandlers: Record<string, RoutineHandler> = {
 export function isBuilt(key: string) {
   return (ROUTINE_PHASE[key] ?? 99) <= CURRENT_PHASE;
 }
-export const CURRENT_PHASE = 0;
+export const CURRENT_PHASE = 1;
+
+function astWeek(d: Date) {
+  return formatAst(d, "RRRR-II");
+}
 

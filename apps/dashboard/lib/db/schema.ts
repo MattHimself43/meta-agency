@@ -255,7 +255,15 @@ export const leads = pgTable(
     fitScore: smallint("fit_score"),
     fitScoreOverride: smallint("fit_score_override"),
     scoreReasons: jsonb("score_reasons").$type<unknown>().notNull().default(sql`'[]'::jsonb`),
+    /** Raw scoring inputs: { ad_activity: 0-1, inventory_size: 0-1, ... } — see lib/leads/scoring.ts */
+    signals: jsonb("signals").$type<Record<string, number>>().notNull().default(sql`'{}'::jsonb`),
+    /** Facts gathered by research (recent post, a car in stock, …) used to personalise openers. */
+    facts: jsonb("facts").$type<{ fact: string; url?: string }[]>().notNull().default(sql`'[]'::jsonb`),
     stage: leadStage("stage").notNull().default("new"),
+    sequenceId: uuid("sequence_id").references(() => sequences.id, { onDelete: "set null" }),
+    sequenceStoppedAt: timestamp("sequence_stopped_at", { withTimezone: true }),
+    sequenceStopReason: text("sequence_stop_reason"),
+    lastContactedAt: timestamp("last_contacted_at", { withTimezone: true }),
     nextAction: text("next_action"),
     nextActionDue: timestamp("next_action_due", { withTimezone: true }),
     doNotContact: boolean("do_not_contact").notNull().default(false),
@@ -343,6 +351,8 @@ export const bookings = pgTable(
     status: bookingStatus("status").notNull().default("booked"),
     notes: text("notes"),
     externalEventId: text("external_event_id"),
+    callBriefId: uuid("call_brief_id"),
+    source: text("source").notNull().default("book_page"), // book_page | manual
     isDemo: demo(),
     ...timestamps(),
   },
@@ -388,6 +398,9 @@ export const messages = pgTable(
     channel: channel("channel").notNull(),
     purpose: text("purpose").notNull(),
     sequenceStepId: uuid("sequence_step_id").references(() => sequenceSteps.id, { onDelete: "set null" }),
+    stepOrder: smallint("step_order"),
+    /** For reply drafts: the classification of the inbound reply */
+    classification: text("classification"),
     templateId: uuid("template_id").references(() => messageTemplates.id, { onDelete: "set null" }),
     variants: jsonb("variants").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
     chosenVariant: smallint("chosen_variant"),
@@ -876,4 +889,13 @@ export const rateLimits = pgTable("rate_limits", {
   key: text("key").primaryKey(),
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   count: integer("count").notNull().default(0),
+});
+
+/** Saved filters on the Leads table. */
+export const savedViews = pgTable("saved_views", {
+  id: id(),
+  page: text("page").notNull().default("leads"),
+  name: text("name").notNull(),
+  query: text("query").notNull(),
+  ...timestamps(),
 });

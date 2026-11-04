@@ -41,7 +41,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "Pick the 10 highest-scored uncontacted leads, draft openers and due follow-ups.",
     cron: "0 8 * * 1-5",
     phase: 1,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "lead_refresh",
@@ -49,7 +49,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "Research ~25 new leads, rescore, recheck who started running ads.",
     cron: "0 6 * * 1",
     phase: 1,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "weekly_reports",

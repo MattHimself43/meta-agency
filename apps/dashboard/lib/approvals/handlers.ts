@@ -2,6 +2,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { schema, type Tx } from "@/lib/db";
 import type { Actor } from "@/lib/auth";
+import { finaliseInvoice } from "@/lib/billing/invoices";
 
 type Approval = typeof schema.approvals.$inferSelect;
 export type DecisionContext = { tx: Tx; approval: Approval; actor: Actor | null };
@@ -26,6 +27,17 @@ export const handlers: Partial<Record<string, Handler>> = {
   reply_draft: messageHandler(),
   onboarding_nudge: messageHandler(),
   invoice_reminder: messageHandler(),
+
+  // Invoices: approval assigns the next sequential number, issue and due dates.
+  invoice: {
+    onApprove: async ({ tx, approval }) => {
+      if (approval.subjectTable === "invoices" && approval.subjectId) await finaliseInvoice(tx, approval.subjectId);
+    },
+    onReject: async ({ tx, approval }) => {
+      if (approval.subjectTable === "invoices" && approval.subjectId)
+        await tx.update(schema.invoices).set({ status: "void" }).where(eq(schema.invoices.id, approval.subjectId));
+    },
+  },
 };
 
 function messageHandler(): Handler {

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { safeEqual } from "@/lib/crypto";
 import { dispatchDueRoutines } from "@/lib/routines/runner";
 import { processJobs } from "@/lib/jobs";
+import { registerJobHandlers } from "@/lib/job-handlers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ async function handle(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  registerJobHandlers();
   const started = Date.now();
   const deadline = started + (maxDuration - 5) * 1000;
   const now = new Date();
