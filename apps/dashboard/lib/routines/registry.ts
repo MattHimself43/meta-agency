@@ -13,6 +13,7 @@ import { rescoreLeads } from "@/lib/leads/service";
 import { TT_AREAS } from "@/lib/leads/research";
 import { aiAvailable } from "@/lib/ai/client";
 import type { RoutineHandler } from "./types";
+import { creativeRefresh, invoiceChaser, monthEndClose, morningCheck, onboardingChaser, weeklyReports, weeklyReview } from "./deliver";
 
 const notBuilt =
   (key: string): RoutineHandler =>
@@ -65,7 +66,7 @@ export const routineHandlers: Record<string, RoutineHandler> = {
     return { digest: `Digest emailed to ${to}`, output: { pending: pendingN, lines: lines.length } };
   },
 
-  morning_check: notBuilt("morning_check"),
+  morning_check: morningCheck,
   /** Mon-Fri 08:00: openers for the top-scored uncontacted leads + follow-ups due today. */
   outreach_batch: async ({ run, now, deadline }) => {
     registerJobHandlers();
@@ -103,18 +104,18 @@ export const routineHandlers: Record<string, RoutineHandler> = {
     for (const l of noAds) await enqueueJob("ad_check", { leadId: l.id }, { dedupeKey: `ad_check:${l.id}:${astWeek(now)}`, routineRunId: run.id });
     return { digest: `Lead refresh: ${research} research job(s), ${noAds.length} ad check(s) queued, ${rescored} rescored`, output: { research, adChecks: noAds.length, rescored } };
   },
-  weekly_reports: notBuilt("weekly_reports"),
-  creative_refresh: notBuilt("creative_refresh"),
-  month_end_close: notBuilt("month_end_close"),
-  onboarding_chaser: notBuilt("onboarding_chaser"),
-  invoice_chaser: notBuilt("invoice_chaser"),
-  weekly_review: notBuilt("weekly_review"),
+  weekly_reports: weeklyReports,
+  creative_refresh: creativeRefresh,
+  month_end_close: monthEndClose,
+  onboarding_chaser: onboardingChaser,
+  invoice_chaser: invoiceChaser,
+  weekly_review: weeklyReview,
 };
 
 export function isBuilt(key: string) {
   return (ROUTINE_PHASE[key] ?? 99) <= CURRENT_PHASE;
 }
-export const CURRENT_PHASE = 1;
+export const CURRENT_PHASE = 2;
 
 function astWeek(d: Date) {
   return formatAst(d, "RRRR-II");

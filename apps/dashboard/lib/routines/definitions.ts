@@ -33,7 +33,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "Pull/import yesterday's results, flag problems, draft recommendations, write the morning brief.",
     cron: "0 7 * * *",
     phase: 2,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "outreach_batch",
@@ -57,7 +57,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "One report per active client.",
     cron: "0 9 * * 1",
     phase: 2,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "creative_refresh",
@@ -67,7 +67,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     everyNWeeks: 2,
     anchorDate: "2026-11-04",
     phase: 2,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "month_end_close",
@@ -75,7 +75,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "Monthly reviews, invoices, renewal and upsell notes.",
     cron: "0 8 1 * *",
     phase: 2,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "onboarding_chaser",
@@ -83,7 +83,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "Nudges for onboarding steps stuck 2+ days.",
     cron: "0 10 * * *",
     phase: 2,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "invoice_chaser",
@@ -91,7 +91,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "Reminder drafts for overdue invoices (3, 10 and 21 days).",
     cron: "0 11 * * *",
     phase: 2,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
   {
     key: "weekly_review",
@@ -99,7 +99,7 @@ export const ROUTINE_DEFINITIONS: RoutineDefinition[] = [
     description: "Pipeline, revenue, reply rates, hours.",
     cron: "0 16 * * 5",
     phase: 2,
-    enabledByDefault: false,
+    enabledByDefault: true,
   },
 ];
 
