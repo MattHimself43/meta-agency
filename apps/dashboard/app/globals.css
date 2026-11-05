@@ -10,7 +10,7 @@
 @layer base {
   :root {
     color-scheme: dark;
-    --font-display: "Space Grotesk";
+    --font-display: "Bricolage Grotesque";
     --font-body: "Inter";
 
     --background: 225 60% 5%;          /* #050914 */
