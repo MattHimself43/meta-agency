@@ -1,7 +1,6 @@
 import "server-only";
 import React from "react";
 import { and, asc, eq } from "drizzle-orm";
-import { renderToBuffer } from "@react-pdf/renderer";
 import { db, schema } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { createApproval } from "@/lib/approvals";
@@ -11,7 +10,6 @@ import { putObject } from "@/lib/storage";
 import { formatAst } from "@/lib/time";
 import { aiAvailable, runPrompt } from "@/lib/ai/client";
 import { kickoffV1, type KickoffOutput } from "@/lib/ai/prompts/deliver.v1";
-import { AgreementPdf } from "@/lib/pdf/agreement-pdf";
 import { agreementSections, AGREEMENT_VERSION } from "./agreement";
 
 export type Client = typeof schema.clients.$inferSelect;
@@ -96,6 +94,8 @@ export async function signAgreement(clientId: string, input: { name: string; sig
   const sections = await agreementFor(clientId);
   const sigPath = `clients/${clientId}/agreement/signature-${signedAt.getTime()}.png`;
   await putObject(sigPath, Buffer.from(input.signaturePng.split(",")[1]!, "base64"), "image/png");
+  const { renderToBuffer } = await import("@react-pdf/renderer");
+  const { AgreementPdf } = await import("@/lib/pdf/agreement-pdf");
   const pdf = await renderToBuffer(
     React.createElement(AgreementPdf, {
       agencyName: settings.agencyName,

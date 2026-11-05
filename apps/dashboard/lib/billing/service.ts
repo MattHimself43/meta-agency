@@ -2,13 +2,11 @@ import "server-only";
 import React from "react";
 import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import { differenceInCalendarDays, parseISO } from "date-fns";
-import { renderToBuffer } from "@react-pdf/renderer";
 import { db, schema } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { createApproval } from "@/lib/approvals";
 import { getSettings } from "@/lib/settings";
 import { astDateString } from "@/lib/time";
-import { InvoicePdf } from "@/lib/pdf/invoice-pdf";
 import { activeProvider, issuePayLink } from "@/lib/payments";
 import { draftInvoice } from "./invoices";
 
@@ -106,6 +104,8 @@ export async function renderInvoicePdf(id: string) {
   const [client] = await db.select().from(schema.clients).where(eq(schema.clients.id, inv.clientId));
   const agency = (inv.agencySnapshot as object | null) ?? { name: settings.agencyName, address: settings.addressLines, registrationNumber: settings.registrationNumber, vatNumber: settings.vatNumber, bank: settings.bankDetails };
   const clientSnap = (inv.clientSnapshot as object | null) ?? { name: client?.name, contact: client?.contactName, email: client?.email, whatsapp: client?.whatsapp };
+  const { renderToBuffer } = await import("@react-pdf/renderer");
+  const { InvoicePdf } = await import("@/lib/pdf/invoice-pdf");
   const buf = await renderToBuffer(
     React.createElement(InvoicePdf, { number: inv.number, status: inv.status, issueDate: inv.issueDate, dueDate: inv.dueDate, agency, client: clientSnap, lines, subtotalCents: inv.subtotalCents, vatCents: inv.vatCents, totalCents: inv.totalCents, vatRatePct: settings.vatRateBps / 100, paymentLink: inv.paymentLink }) as Parameters<typeof renderToBuffer>[0],
   );

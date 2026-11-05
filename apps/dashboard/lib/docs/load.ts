@@ -1,11 +1,9 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
-import { renderToBuffer } from "@react-pdf/renderer";
 import React from "react";
 import { db, schema } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import { formatAst } from "@/lib/time";
-import { DocPdf } from "@/lib/pdf/doc-pdf";
 import { DOC_TABLE, DOC_LABEL } from "./generate";
 import { TITLE_FIELD, type DocKind } from "./sections";
 
@@ -29,6 +27,8 @@ export async function loadDoc(kind: DocKind, id: string) {
 export async function renderDocPdf(kind: DocKind, id: string) {
   const d = await loadDoc(kind, id);
   if (!d) return null;
+  const { renderToBuffer } = await import("@react-pdf/renderer");
+  const { DocPdf } = await import("@/lib/pdf/doc-pdf");
   const buf = await renderToBuffer(
     React.createElement(DocPdf, { kind, content: d.content, title: d.title, subtitle: d.subtitle, agencyName: d.agencyName, pkg: d.pkg, setupWaived: d.setupWaived }) as Parameters<typeof renderToBuffer>[0],
   );

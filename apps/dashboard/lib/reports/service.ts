@@ -2,7 +2,6 @@ import "server-only";
 import React from "react";
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { addDays, endOfMonth, format, parseISO, startOfMonth, subMonths } from "date-fns";
-import { renderToBuffer } from "@react-pdf/renderer";
 import { db, schema } from "@/lib/db";
 import { logAudit } from "@/lib/audit";
 import { createApproval } from "@/lib/approvals";
@@ -12,7 +11,6 @@ import { aiAvailable, runPrompt } from "@/lib/ai/client";
 import { reportNarrativeV1 } from "@/lib/ai/prompts/deliver.v1";
 import { rowsFor, targetCpr } from "@/lib/performance/service";
 import { periodSummary, shiftDay } from "@/lib/performance/metrics";
-import { ReportPdf } from "@/lib/pdf/report-pdf";
 
 export type ReportContent = {
   type: "weekly" | "monthly";
@@ -128,6 +126,8 @@ export async function renderReportPdf(reportId: string) {
   if (!r) return null;
   const [client] = await db.select().from(schema.clients).where(eq(schema.clients.id, r.clientId));
   const settings = await getSettings();
+  const { renderToBuffer } = await import("@react-pdf/renderer");
+  const { ReportPdf } = await import("@/lib/pdf/report-pdf");
   const buf = await renderToBuffer(React.createElement(ReportPdf, { r: r.content as ReportContent, agencyName: settings.agencyName, clientName: client?.name ?? "" }) as Parameters<typeof renderToBuffer>[0]);
   return { buf, filename: `${r.type}-report-${r.periodStart}.pdf` };
 }

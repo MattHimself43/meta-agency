@@ -10,7 +10,16 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // @react-pdf/renderer is loaded from node_modules at runtime (not bundled) and is imported lazily,
+  // only inside the PDF render functions, so the dashboard and routines never load pdfkit.
   serverExternalPackages: ["postgres", "@react-pdf/renderer"],
+  // pdfkit loads its standard fonts from data files that Next's tracer misses; ship them with the functions.
+  outputFileTracingIncludes: {
+    "/**": [
+      "../../node_modules/pdfkit/js/standard-fonts/**",
+      "./node_modules/pdfkit/js/standard-fonts/**",
+    ],
+  },
   experimental: {
     serverActions: { bodySizeLimit: "2mb" },
   },
